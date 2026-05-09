@@ -157,3 +157,38 @@ Stage Summary:
 - Tooltips on all action icons
 - Filter reset button and Export button
 - All lint checks pass, dev server running on port 3000
+
+---
+Task ID: 5
+Agent: Main Agent
+Task: Replace user modal with dedicated page using tabs (Informations, Transactions, Documents KYC, Historiques)
+
+Work Log:
+- Added mock data to mock-data.ts:
+  - KYCDocument interface + kycDocuments array (19 documents across all users)
+  - UserActivity interface + userActivities array (24 activity events across all users)
+  - Document statuses: VERIFIED, PENDING, REJECTED, EXPIRED
+  - Activity categories: AUTH, TRANSACTION, KYC, SECURITY, PROFILE, SYSTEM
+- Created user-detail-page.tsx component with full-page layout and 4 tabs:
+  - Informations: Contact info cards, Account info cards, KYC requests table
+  - Transactions: Full transaction table with type icons, status badges, export button
+  - Documents KYC: Document list with status icons (CheckCircle2, XCircle, AlertTriangle, Clock), verification details, view button
+  - Historiques: Activity timeline with category icons and colors, export button
+- Added quick stats row on detail page (Balance, Total Received, Total Sent, KYC Docs count)
+- Added action buttons in header (Modify, Suspend/Reactivate, Delete) with confirmation dialogs
+- Added back button to return to users list
+- Updated users-page.tsx:
+  - Replaced Dialog modal with page navigation (selectedUserId state)
+  - Eye icon and dropdown "Voir le profil" now navigate to detail page
+  - Dropdown "Voir transactions" and "Historique KYC" also navigate to detail page
+  - Moved conditional render after all hooks to fix react-hooks/rules-of-hooks
+- Fixed lint errors (hooks called conditionally)
+- Verified lint passes clean and dev server returns HTTP 200
+
+Stage Summary:
+- Replaced modal dialogs with dedicated user detail page
+- 4 tabs: Informations, Transactions, Documents KYC, Historiques
+- Rich mock data for KYC documents and activity history per user
+- Quick stats row on detail page
+- Back button to return to users list
+- All lint checks pass, dev server running on port 3000

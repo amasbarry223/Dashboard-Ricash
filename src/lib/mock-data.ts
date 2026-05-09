@@ -378,6 +378,81 @@ export const auditLog: AuditLogEntry[] = [
   { id: "LOG-008", action: "Connexion", details: "Connexion réussie depuis Safari / iPhone 15", date: "2025-06-05 08:00", ip: "154.72.xxx.xxx" },
 ]
 
+// ─── User Detail: KYC Documents ────────────────────────────────────────────────
+export type KYCDocStatus = "VERIFIED" | "PENDING" | "REJECTED" | "EXPIRED"
+
+export interface KYCDocument {
+  id: string
+  userId: string
+  type: string
+  numero: string
+  dateSoumission: string
+  dateExpiration: string
+  statut: KYCDocStatus
+  verifiedBy: string
+  commentaire: string
+}
+
+export const kycDocuments: KYCDocument[] = [
+  { id: "DOC-001", userId: "USR-001", type: "CNI recto/verso", numero: "NIA-2018-45231", dateSoumission: "2024-03-15", dateExpiration: "2028-03-15", statut: "VERIFIED", verifiedBy: "Admin Conformité", commentaire: "Document lisible et conforme" },
+  { id: "DOC-002", userId: "USR-001", type: "Selfie biométrique", numero: "SELFIE-2024-001", dateSoumission: "2024-06-20", dateExpiration: "", statut: "VERIFIED", verifiedBy: "Smile Identity API", commentaire: "Score correspondance: 98.5%" },
+  { id: "DOC-003", userId: "USR-002", type: "CNI recto/verso", numero: "NIA-2019-78432", dateSoumission: "2024-05-22", dateExpiration: "2029-05-22", statut: "VERIFIED", verifiedBy: "Admin Conformité", commentaire: "Document valide" },
+  { id: "DOC-004", userId: "USR-003", type: "CNI recto/verso", numero: "NIA-2020-12345", dateSoumission: "2024-07-10", dateExpiration: "2025-07-10", statut: "EXPIRED", verifiedBy: "", commentaire: "Document expiré — renouvellement requis" },
+  { id: "DOC-005", userId: "USR-004", type: "CNI recto/verso", numero: "NIA-2017-91234", dateSoumission: "2024-01-08", dateExpiration: "2027-01-08", statut: "VERIFIED", verifiedBy: "Admin Conformité", commentaire: "Document conforme" },
+  { id: "DOC-006", userId: "USR-004", type: "Selfie biométrique", numero: "SELFIE-2024-004", dateSoumission: "2024-02-15", dateExpiration: "", statut: "VERIFIED", verifiedBy: "Smile Identity API", commentaire: "Score: 99.1%" },
+  { id: "DOC-007", userId: "USR-004", type: "Justificatif de revenus", numero: "JIR-2024-089", dateSoumission: "2024-03-01", dateExpiration: "2025-03-01", statut: "VERIFIED", verifiedBy: "Admin Conformité", commentaire: "Revenus confirmés" },
+  { id: "DOC-008", userId: "USR-004", type: "Vidéo de vérification", numero: "VID-2024-012", dateSoumission: "2024-03-02", dateExpiration: "", statut: "VERIFIED", verifiedBy: "Smile Identity API", commentaire: "Vidéo validée" },
+  { id: "DOC-009", userId: "USR-005", type: "CNI recto/verso", numero: "NIA-2021-55678", dateSoumission: "2024-09-14", dateExpiration: "2026-09-14", statut: "REJECTED", verifiedBy: "Admin Conformité", commentaire: "Photo illisible — nouvelle soumission requise" },
+  { id: "DOC-010", userId: "USR-006", type: "CNI recto/verso", numero: "NIA-2019-33456", dateSoumission: "2024-04-03", dateExpiration: "2029-04-03", statut: "VERIFIED", verifiedBy: "Admin Conformité", commentaire: "Document valide" },
+  { id: "DOC-011", userId: "USR-006", type: "Selfie biométrique", numero: "SELFIE-2024-006", dateSoumission: "2024-05-10", dateExpiration: "", statut: "VERIFIED", verifiedBy: "Smile Identity API", commentaire: "Score: 97.8%" },
+  { id: "DOC-012", userId: "USR-007", type: "CNI recto/verso", numero: "NIA-2022-87654", dateSoumission: "2024-06-18", dateExpiration: "2027-06-18", statut: "VERIFIED", verifiedBy: "Admin Conformité", commentaire: "Document conforme" },
+  { id: "DOC-013", userId: "USR-009", type: "CNI recto/verso", numero: "NIA-2023-44321", dateSoumission: "2024-11-05", dateExpiration: "2026-11-05", statut: "PENDING", verifiedBy: "", commentaire: "En attente de vérification" },
+  { id: "DOC-014", userId: "USR-010", type: "CNI recto/verso", numero: "NIA-2016-22110", dateSoumission: "2024-01-12", dateExpiration: "2026-01-12", statut: "VERIFIED", verifiedBy: "Admin Conformité", commentaire: "Document valide" },
+  { id: "DOC-015", userId: "USR-010", type: "Selfie biométrique", numero: "SELFIE-2024-010", dateSoumission: "2024-01-20", dateExpiration: "", statut: "VERIFIED", verifiedBy: "Smile Identity API", commentaire: "Score: 99.3%" },
+  { id: "DOC-016", userId: "USR-010", type: "Justificatif de revenus", numero: "JIR-2024-110", dateSoumission: "2024-02-01", dateExpiration: "2025-02-01", statut: "VERIFIED", verifiedBy: "Admin Conformité", commentaire: "Certificat employeur validé" },
+  { id: "DOC-017", userId: "USR-010", type: "Vidéo de vérification", numero: "VID-2024-020", dateSoumission: "2024-02-02", dateExpiration: "", statut: "VERIFIED", verifiedBy: "Smile Identity API", commentaire: "Vidéo validée" },
+  { id: "DOC-018", userId: "USR-011", type: "CNI recto/verso", numero: "NIA-2020-67890", dateSoumission: "2024-08-19", dateExpiration: "2028-08-19", statut: "VERIFIED", verifiedBy: "Admin Conformité", commentaire: "Document valide" },
+  { id: "DOC-019", userId: "USR-011", type: "Selfie biométrique", numero: "SELFIE-2024-011", dateSoumission: "2024-08-25", dateExpiration: "", statut: "VERIFIED", verifiedBy: "Smile Identity API", commentaire: "Score: 96.2%" },
+]
+
+// ─── User Detail: Activity History ─────────────────────────────────────────────
+export interface UserActivity {
+  id: string
+  userId: string
+  action: string
+  details: string
+  date: string
+  ip: string
+  categorie: "AUTH" | "TRANSACTION" | "KYC" | "SECURITY" | "PROFILE" | "SYSTEM"
+}
+
+export const userActivities: UserActivity[] = [
+  { id: "ACT-001", userId: "USR-001", action: "Connexion", details: "Connexion depuis Android / Chrome Mobile", date: "2025-06-10 14:30", ip: "196.47.xxx.xxx", categorie: "AUTH" },
+  { id: "ACT-002", userId: "USR-001", action: "Transfert émis", details: "Transfert de 75 000 XOF vers Fatoumata Traoré", date: "2025-06-10 13:15", ip: "196.47.xxx.xxx", categorie: "TRANSACTION" },
+  { id: "ACT-003", userId: "USR-001", action: "Dépôt reçu", details: "Dépôt de 150 000 XOF via AGT-012", date: "2025-06-10 14:32", ip: "196.47.xxx.xxx", categorie: "TRANSACTION" },
+  { id: "ACT-004", userId: "USR-001", action: "Modification KYC", details: "Soumission demande Tier 2 — CNI + Selfie biométrique", date: "2025-06-08 09:20", ip: "196.47.xxx.xxx", categorie: "KYC" },
+  { id: "ACT-005", userId: "USR-001", action: "Changement code secret", details: "Code secret modifié avec succès", date: "2025-06-05 11:45", ip: "196.47.xxx.xxx", categorie: "SECURITY" },
+  { id: "ACT-006", userId: "USR-001", action: "Connexion", details: "Connexion depuis iPhone / Safari Mobile", date: "2025-06-04 08:00", ip: "154.72.xxx.xxx", categorie: "AUTH" },
+  { id: "ACT-007", userId: "USR-001", action: "Paiement marchand", details: "Paiement de 12 500 XOF à Marchand #MRC-034", date: "2025-06-03 16:20", ip: "196.47.xxx.xxx", categorie: "TRANSACTION" },
+  { id: "ACT-008", userId: "USR-001", action: "Mise à jour profil", details: "Numéro de téléphone mis à jour", date: "2025-05-28 10:15", ip: "196.47.xxx.xxx", categorie: "PROFILE" },
+  { id: "ACT-009", userId: "USR-002", action: "Connexion", details: "Connexion depuis Android / Chrome Mobile", date: "2025-06-09 18:30", ip: "154.72.xxx.xxx", categorie: "AUTH" },
+  { id: "ACT-010", userId: "USR-002", action: "Transfert reçu", details: "Réception de 75 000 XOF de Amadou Diallo", date: "2025-06-10 13:16", ip: "154.72.xxx.xxx", categorie: "TRANSACTION" },
+  { id: "ACT-011", userId: "USR-002", action: "Retrait", details: "Retrait de 80 000 XOF via AGT-045", date: "2025-06-08 17:30", ip: "154.72.xxx.xxx", categorie: "TRANSACTION" },
+  { id: "ACT-012", userId: "USR-002", action: "Soumission KYC", details: "Demande Tier 2 — CNI + Selfie biométrique", date: "2025-06-09 10:00", ip: "154.72.xxx.xxx", categorie: "KYC" },
+  { id: "ACT-013", userId: "USR-003", action: "Connexion", details: "Tentative de connexion échouée (3ème tentative)", date: "2025-05-30 09:45", ip: "102.33.xxx.xxx", categorie: "SECURITY" },
+  { id: "ACT-014", userId: "USR-003", action: "Suspension", details: "Compte suspendu par l'admin — Fraude suspectée", date: "2025-05-30 10:00", ip: "196.47.xxx.xxx", categorie: "SYSTEM" },
+  { id: "ACT-015", userId: "USR-004", action: "Dépôt reçu", details: "Dépôt de 500 000 XOF via AGT-023", date: "2025-06-10 08:30", ip: "196.47.xxx.xxx", categorie: "TRANSACTION" },
+  { id: "ACT-016", userId: "USR-004", action: "Paiement marchand", details: "Paiement de 25 000 XOF via QR Code", date: "2025-06-10 11:20", ip: "196.47.xxx.xxx", categorie: "TRANSACTION" },
+  { id: "ACT-017", userId: "USR-004", action: "Approbation KYC", details: "Niveau Tier 3 approuvé — Dossier complet validé", date: "2024-03-05 14:00", ip: "196.47.xxx.xxx", categorie: "KYC" },
+  { id: "ACT-018", userId: "USR-006", action: "Soumission KYC", details: "Demande Tier 3 — Dossier complet avec vidéo", date: "2025-06-10 09:30", ip: "154.72.xxx.xxx", categorie: "KYC" },
+  { id: "ACT-019", userId: "USR-006", action: "Transfert émis", details: "Transfert de 200 000 XOF vers Oumou Sangaré", date: "2025-06-07 15:00", ip: "154.72.xxx.xxx", categorie: "TRANSACTION" },
+  { id: "ACT-020", userId: "USR-009", action: "Alerte sécurité", details: "Connexion depuis IP suspecte détectée", date: "2025-04-18 22:30", ip: "85.203.xxx.xxx", categorie: "SECURITY" },
+  { id: "ACT-021", userId: "USR-010", action: "Dépôt reçu", details: "Dépôt de 250 000 XOF via AGT-067", date: "2025-06-09 09:15", ip: "196.47.xxx.xxx", categorie: "TRANSACTION" },
+  { id: "ACT-022", userId: "USR-010", action: "Transfert émis", details: "Transfert de 200 000 XOF vers Kadiatou Diabaté", date: "2025-06-10 10:55", ip: "196.47.xxx.xxx", categorie: "TRANSACTION" },
+  { id: "ACT-023", userId: "USR-011", action: "Approbation KYC", details: "Niveau Tier 2 approuvé", date: "2025-06-04 16:00", ip: "196.47.xxx.xxx", categorie: "KYC" },
+  { id: "ACT-024", userId: "USR-012", action: "Dernière connexion", details: "Dernière activité enregistrée le 2025-01-10", date: "2025-01-10 14:30", ip: "154.72.xxx.xxx", categorie: "AUTH" },
+]
+
 // ─── Services Status ─────────────────────────────────────────────────────────
 export interface ServiceStatus {
   name: string

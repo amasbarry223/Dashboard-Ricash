@@ -6,29 +6,25 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger, DropdownMenuLabel } from "@/components/ui/dropdown-menu"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { Separator } from "@/components/ui/separator"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import {
   Users, UserCheck, UserX, ShieldOff, Search, ChevronLeft, ChevronRight,
   Eye, Plus, Pencil, Trash2, MoreHorizontal, ShieldCheck, Ban, ArrowUpDown,
-  Download, FilterX, Mail, Phone, MapPin, Star, FileText, UserPlus,
-  ChevronUp, ChevronDown,
+  Download, FilterX, Mail, UserPlus, ChevronUp, ChevronDown,
 } from "lucide-react"
 import { useState, useMemo, useCallback } from "react"
 import { users, type User, type UserStatus, type KYCLevel } from "@/lib/mock-data"
+import { UserDetailPage } from "./user-detail-page"
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const ITEMS_PER_PAGE = 8
 
 const statusLabelMap: Record<UserStatus, string> = {
-  ACTIVE: "Actif",
-  INACTIVE: "Inactif",
-  SUSPENDED: "Suspendu",
+  ACTIVE: "Actif", INACTIVE: "Inactif", SUSPENDED: "Suspendu",
 }
 
 const statusBadgeClass: Record<UserStatus, string> = {
@@ -38,9 +34,7 @@ const statusBadgeClass: Record<UserStatus, string> = {
 }
 
 const statusDotClass: Record<UserStatus, string> = {
-  ACTIVE: "bg-emerald-500",
-  INACTIVE: "bg-gray-400",
-  SUSPENDED: "bg-red-500",
+  ACTIVE: "bg-emerald-500", INACTIVE: "bg-gray-400", SUSPENDED: "bg-red-500",
 }
 
 const kycBadgeClass: Record<KYCLevel, string> = {
@@ -55,32 +49,6 @@ type SortField = "id" | "nom" | "statut" | "kycLevel" | "solde" | "derniereActiv
 type SortDirection = "asc" | "desc"
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-function formatXOF(amount: number): string {
-  return new Intl.NumberFormat("fr-FR", {
-    style: "decimal",
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(amount) + " XOF"
-}
-
-function formatDateFR(dateStr: string): string {
-  const date = new Date(dateStr)
-  return new Intl.DateTimeFormat("fr-FR", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  }).format(date)
-}
-
-function formatDateFull(dateStr: string): string {
-  const date = new Date(dateStr)
-  return new Intl.DateTimeFormat("fr-FR", {
-    day: "2-digit",
-    month: "long",
-    year: "numeric",
-  }).format(date)
-}
-
 function getInitials(nom: string, prenom: string): string {
   return `${prenom.charAt(0)}${nom.charAt(0)}`.toUpperCase()
 }
@@ -111,19 +79,9 @@ function KYCBadge({ level }: { level: KYCLevel }) {
 }
 
 function StatsCard({
-  title,
-  value,
-  icon: Icon,
-  iconBg,
-  iconColor,
-  trend,
+  title, value, icon: Icon, iconBg, iconColor, trend,
 }: {
-  title: string
-  value: number
-  icon: React.ElementType
-  iconBg: string
-  iconColor: string
-  trend?: string
+  title: string; value: number; icon: React.ElementType; iconBg: string; iconColor: string; trend?: string
 }) {
   return (
     <Card className="relative overflow-hidden">
@@ -143,37 +101,17 @@ function StatsCard({
   )
 }
 
-// Sortable header component
 function SortableHeader({
-  label,
-  field,
-  sortField,
-  sortDirection,
-  onSort,
-  className,
+  label, field, sortField, sortDirection, onSort, className,
 }: {
-  label: string
-  field: SortField
-  sortField: SortField
-  sortDirection: SortDirection
-  onSort: (field: SortField) => void
-  className?: string
+  label: string; field: SortField; sortField: SortField; sortDirection: SortDirection; onSort: (field: SortField) => void; className?: string
 }) {
   const isActive = sortField === field
   return (
-    <Button
-      variant="ghost"
-      size="sm"
-      className={`-ml-3 h-8 gap-1 ${className || ""}`}
-      onClick={() => onSort(field)}
-    >
+    <Button variant="ghost" size="sm" className={`-ml-3 h-8 gap-1 ${className || ""}`} onClick={() => onSort(field)}>
       {label}
       {isActive ? (
-        sortDirection === "asc" ? (
-          <ChevronUp className="size-3.5" />
-        ) : (
-          <ChevronDown className="size-3.5" />
-        )
+        sortDirection === "asc" ? <ChevronUp className="size-3.5" /> : <ChevronDown className="size-3.5" />
       ) : (
         <ArrowUpDown className="size-3.5 opacity-40" />
       )}
@@ -188,21 +126,20 @@ export function UsersPage() {
   const [statusFilter, setStatusFilter] = useState<string>("all")
   const [kycFilter, setKycFilter] = useState<string>("all")
   const [currentPage, setCurrentPage] = useState(1)
-  const [selectedUser, setSelectedUser] = useState<User | null>(null)
   const [sortField, setSortField] = useState<SortField>("id")
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc")
   const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set())
   const [deleteDialogUser, setDeleteDialogUser] = useState<User | null>(null)
   const [suspendDialogUser, setSuspendDialogUser] = useState<User | null>(null)
-  const [editDialogUser, setEditDialogUser] = useState<User | null>(null)
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null)
 
-  // ── Sort handler ───────────────────────────────────────────────────────────
+  // ── Sort handler ─────────────────────────────────────────────────────────
   const handleSort = useCallback((field: SortField) => {
     setSortDirection((prev) => sortField === field && prev === "asc" ? "desc" : "asc")
     setSortField(field)
   }, [sortField])
 
-  // ── Filtering, Sorting & Pagination ────────────────────────────────────────
+  // ── Filtering, Sorting & Pagination ──────────────────────────────────────
   const filteredUsers = useMemo(() => {
     const filtered = users.filter((user) => {
       const query = searchQuery.toLowerCase().trim()
@@ -219,28 +156,15 @@ export function UsersPage() {
       return true
     })
 
-    // Sort
     filtered.sort((a, b) => {
       let cmp = 0
       switch (sortField) {
-        case "id":
-          cmp = a.id.localeCompare(b.id)
-          break
-        case "nom":
-          cmp = `${a.prenom} ${a.nom}`.localeCompare(`${b.prenom} ${b.nom}`)
-          break
-        case "statut":
-          cmp = a.statut.localeCompare(b.statut)
-          break
-        case "kycLevel":
-          cmp = a.kycLevel.localeCompare(b.kycLevel)
-          break
-        case "solde":
-          cmp = a.solde - b.solde
-          break
-        case "derniereActivite":
-          cmp = new Date(a.derniereActivite).getTime() - new Date(b.derniereActivite).getTime()
-          break
+        case "id": cmp = a.id.localeCompare(b.id); break
+        case "nom": cmp = `${a.prenom} ${a.nom}`.localeCompare(`${b.prenom} ${b.nom}`); break
+        case "statut": cmp = a.statut.localeCompare(b.statut); break
+        case "kycLevel": cmp = a.kycLevel.localeCompare(b.kycLevel); break
+        case "solde": cmp = a.solde - b.solde; break
+        case "derniereActivite": cmp = new Date(a.derniereActivite).getTime() - new Date(b.derniereActivite).getTime(); break
       }
       return sortDirection === "asc" ? cmp : -cmp
     })
@@ -256,56 +180,37 @@ export function UsersPage() {
     return filteredUsers.slice(start, start + ITEMS_PER_PAGE)
   }, [filteredUsers, safeCurrentPage])
 
-  // Reset page when filters change
-  const handleSearchChange = (value: string) => {
-    setSearchQuery(value)
-    setCurrentPage(1)
+  const handleSearchChange = (value: string) => { setSearchQuery(value); setCurrentPage(1) }
+  const handleStatusChange = (value: string) => { setStatusFilter(value); setCurrentPage(1) }
+  const handleKycChange = (value: string) => { setKycFilter(value); setCurrentPage(1) }
+
+  // If a user is selected, show detail page (after all hooks)
+  if (selectedUserId) {
+    return <UserDetailPage userId={selectedUserId} onBack={() => setSelectedUserId(null)} />
   }
 
-  const handleStatusChange = (value: string) => {
-    setStatusFilter(value)
-    setCurrentPage(1)
-  }
-
-  const handleKycChange = (value: string) => {
-    setKycFilter(value)
-    setCurrentPage(1)
-  }
-
-  // ── Row Selection ──────────────────────────────────────────────────────────
+  // ── Row Selection ────────────────────────────────────────────────────────
   const toggleRow = (id: string) => {
-    setSelectedRows((prev) => {
-      const next = new Set(prev)
-      if (next.has(id)) next.delete(id)
-      else next.add(id)
-      return next
-    })
+    setSelectedRows((prev) => { const next = new Set(prev); if (next.has(id)) next.delete(id); else next.add(id); return next })
   }
-
   const toggleAll = () => {
-    if (selectedRows.size === paginatedUsers.length) {
-      setSelectedRows(new Set())
-    } else {
-      setSelectedRows(new Set(paginatedUsers.map((u) => u.id)))
-    }
+    if (selectedRows.size === paginatedUsers.length) setSelectedRows(new Set())
+    else setSelectedRows(new Set(paginatedUsers.map((u) => u.id)))
   }
-
   const isAllSelected = paginatedUsers.length > 0 && selectedRows.size === paginatedUsers.length
-
   const clearSelection = () => setSelectedRows(new Set())
 
-  // ── Stats ─────────────────────────────────────────────────────────────────
+  // ── Stats ────────────────────────────────────────────────────────────────
   const totalUsers = users.length
   const activeUsers = users.filter((u) => u.statut === "ACTIVE").length
   const inactiveUsers = users.filter((u) => u.statut === "INACTIVE").length
   const suspendedUsers = users.filter((u) => u.statut === "SUSPENDED").length
 
-  // ── Pagination helpers ────────────────────────────────────────────────────
+  // ── Pagination helpers ──────────────────────────────────────────────────
   const getPageNumbers = (): (number | "...")[] => {
     const pages: (number | "...")[] = []
-    if (totalPages <= 5) {
-      for (let i = 1; i <= totalPages; i++) pages.push(i)
-    } else {
+    if (totalPages <= 5) { for (let i = 1; i <= totalPages; i++) pages.push(i) }
+    else {
       pages.push(1)
       if (safeCurrentPage > 3) pages.push("...")
       const start = Math.max(2, safeCurrentPage - 1)
@@ -319,7 +224,6 @@ export function UsersPage() {
 
   const startIndex = (safeCurrentPage - 1) * ITEMS_PER_PAGE + 1
   const endIndex = Math.min(safeCurrentPage * ITEMS_PER_PAGE, filteredUsers.length)
-
   const hasActiveFilters = searchQuery !== "" || statusFilter !== "all" || kycFilter !== "all"
 
   return (
@@ -344,38 +248,10 @@ export function UsersPage() {
 
       {/* ── Stats Cards ────────────────────────────────────────────────────── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatsCard
-          title="Total"
-          value={totalUsers}
-          icon={Users}
-          iconBg="bg-emerald-100 dark:bg-emerald-950"
-          iconColor="text-emerald-600 dark:text-emerald-400"
-          trend="Tous les comptes"
-        />
-        <StatsCard
-          title="Actifs"
-          value={activeUsers}
-          icon={UserCheck}
-          iconBg="bg-emerald-100 dark:bg-emerald-950"
-          iconColor="text-emerald-600 dark:text-emerald-400"
-          trend={`${((activeUsers / totalUsers) * 100).toFixed(0)}% du total`}
-        />
-        <StatsCard
-          title="Inactifs"
-          value={inactiveUsers}
-          icon={UserX}
-          iconBg="bg-gray-100 dark:bg-gray-800"
-          iconColor="text-gray-500 dark:text-gray-400"
-          trend="Aucune activité récente"
-        />
-        <StatsCard
-          title="Suspendus"
-          value={suspendedUsers}
-          icon={ShieldOff}
-          iconBg="bg-red-100 dark:bg-red-950"
-          iconColor="text-red-600 dark:text-red-400"
-          trend="Nécessitent une action"
-        />
+        <StatsCard title="Total" value={totalUsers} icon={Users} iconBg="bg-emerald-100 dark:bg-emerald-950" iconColor="text-emerald-600 dark:text-emerald-400" trend="Tous les comptes" />
+        <StatsCard title="Actifs" value={activeUsers} icon={UserCheck} iconBg="bg-emerald-100 dark:bg-emerald-950" iconColor="text-emerald-600 dark:text-emerald-400" trend={`${((activeUsers / totalUsers) * 100).toFixed(0)}% du total`} />
+        <StatsCard title="Inactifs" value={inactiveUsers} icon={UserX} iconBg="bg-gray-100 dark:bg-gray-800" iconColor="text-gray-500 dark:text-gray-400" trend="Aucune activité récente" />
+        <StatsCard title="Suspendus" value={suspendedUsers} icon={ShieldOff} iconBg="bg-red-100 dark:bg-red-950" iconColor="text-red-600 dark:text-red-400" trend="Nécessitent une action" />
       </div>
 
       {/* ── Filter Bar ─────────────────────────────────────────────────────── */}
@@ -384,18 +260,11 @@ export function UsersPage() {
           <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
             <div className="relative flex-1 w-full sm:w-auto">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-              <Input
-                placeholder="Rechercher par nom, ID, téléphone, email..."
-                value={searchQuery}
-                onChange={(e) => handleSearchChange(e.target.value)}
-                className="pl-9"
-              />
+              <Input placeholder="Rechercher par nom, ID, téléphone, email..." value={searchQuery} onChange={(e) => handleSearchChange(e.target.value)} className="pl-9" />
             </div>
             <div className="flex gap-2 w-full sm:w-auto">
               <Select value={statusFilter} onValueChange={handleStatusChange}>
-                <SelectTrigger className="w-full sm:w-[160px]">
-                  <SelectValue placeholder="Statut" />
-                </SelectTrigger>
+                <SelectTrigger className="w-full sm:w-[160px]"><SelectValue placeholder="Statut" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Tous les statuts</SelectItem>
                   <SelectItem value="ACTIVE">Actif</SelectItem>
@@ -404,9 +273,7 @@ export function UsersPage() {
                 </SelectContent>
               </Select>
               <Select value={kycFilter} onValueChange={handleKycChange}>
-                <SelectTrigger className="w-full sm:w-[160px]">
-                  <SelectValue placeholder="Niveau KYC" />
-                </SelectTrigger>
+                <SelectTrigger className="w-full sm:w-[160px]"><SelectValue placeholder="Niveau KYC" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Tous les niveaux</SelectItem>
                   <SelectItem value="Tier 0">Tier 0</SelectItem>
@@ -418,17 +285,7 @@ export function UsersPage() {
               {hasActiveFilters && (
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="shrink-0 text-muted-foreground hover:text-foreground"
-                      onClick={() => {
-                        setSearchQuery("")
-                        setStatusFilter("all")
-                        setKycFilter("all")
-                        setCurrentPage(1)
-                      }}
-                    >
+                    <Button variant="ghost" size="icon" className="shrink-0 text-muted-foreground hover:text-foreground" onClick={() => { setSearchQuery(""); setStatusFilter("all"); setKycFilter("all"); setCurrentPage(1) }}>
                       <FilterX className="size-4" />
                     </Button>
                   </TooltipTrigger>
@@ -446,26 +303,13 @@ export function UsersPage() {
           <CardContent className="p-3">
             <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-3">
-                <span className="text-sm font-medium">
-                  {selectedRows.size} sélectionné{selectedRows.size > 1 ? "s" : ""}
-                </span>
-                <Button variant="outline" size="sm" className="h-7 text-xs gap-1.5" onClick={clearSelection}>
-                  Désélectionner
-                </Button>
+                <span className="text-sm font-medium">{selectedRows.size} sélectionné{selectedRows.size > 1 ? "s" : ""}</span>
+                <Button variant="outline" size="sm" className="h-7 text-xs gap-1.5" onClick={clearSelection}>Désélectionner</Button>
               </div>
               <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm" className="h-8 gap-1.5">
-                  <ShieldCheck className="size-3.5" />
-                  Valider KYC
-                </Button>
-                <Button variant="outline" size="sm" className="h-8 gap-1.5">
-                  <Mail className="size-3.5" />
-                  Envoyer notification
-                </Button>
-                <Button variant="destructive" size="sm" className="h-8 gap-1.5">
-                  <Ban className="size-3.5" />
-                  Suspendre
-                </Button>
+                <Button variant="outline" size="sm" className="h-8 gap-1.5"><ShieldCheck className="size-3.5" />Valider KYC</Button>
+                <Button variant="outline" size="sm" className="h-8 gap-1.5"><Mail className="size-3.5" />Envoyer notification</Button>
+                <Button variant="destructive" size="sm" className="h-8 gap-1.5"><Ban className="size-3.5" />Suspendre</Button>
               </div>
             </div>
           </CardContent>
@@ -490,11 +334,7 @@ export function UsersPage() {
               <TableHeader>
                 <TableRow className="bg-muted/50 hover:bg-muted/50">
                   <TableHead className="w-[40px] pl-4">
-                    <Checkbox
-                      checked={isAllSelected}
-                      onCheckedChange={toggleAll}
-                      aria-label="Sélectionner tout"
-                    />
+                    <Checkbox checked={isAllSelected} onCheckedChange={toggleAll} aria-label="Sélectionner tout" />
                   </TableHead>
                   <TableHead className="w-[90px]">
                     <SortableHeader label="ID" field="id" sortField={sortField} sortDirection={sortDirection} onSort={handleSort} />
@@ -525,16 +365,7 @@ export function UsersPage() {
                         <Users className="size-8 opacity-40" />
                         <p className="text-sm">Aucun utilisateur trouvé pour ces critères.</p>
                         {hasActiveFilters && (
-                          <Button
-                            variant="link"
-                            size="sm"
-                            onClick={() => {
-                              setSearchQuery("")
-                              setStatusFilter("all")
-                              setKycFilter("all")
-                              setCurrentPage(1)
-                            }}
-                          >
+                          <Button variant="link" size="sm" onClick={() => { setSearchQuery(""); setStatusFilter("all"); setKycFilter("all"); setCurrentPage(1) }}>
                             Réinitialiser les filtres
                           </Button>
                         )}
@@ -548,19 +379,10 @@ export function UsersPage() {
                       data-state={selectedRows.has(user.id) ? "selected" : undefined}
                       className="group"
                     >
-                      {/* Checkbox */}
                       <TableCell className="pl-4">
-                        <Checkbox
-                          checked={selectedRows.has(user.id)}
-                          onCheckedChange={() => toggleRow(user.id)}
-                          aria-label={`Sélectionner ${user.prenom} ${user.nom}`}
-                        />
+                        <Checkbox checked={selectedRows.has(user.id)} onCheckedChange={() => toggleRow(user.id)} aria-label={`Sélectionner ${user.prenom} ${user.nom}`} />
                       </TableCell>
-
-                      {/* ID */}
                       <TableCell className="font-mono text-xs text-muted-foreground">{user.id}</TableCell>
-
-                      {/* Name + Avatar + Email */}
                       <TableCell>
                         <div className="flex items-center gap-3">
                           <Avatar className="size-9 border">
@@ -574,70 +396,40 @@ export function UsersPage() {
                           </div>
                         </div>
                       </TableCell>
-
-                      {/* Status */}
-                      <TableCell className="hidden md:table-cell">
-                        <StatusBadge status={user.statut} />
-                      </TableCell>
-
-                      {/* KYC */}
-                      <TableCell className="hidden sm:table-cell">
-                        <KYCBadge level={user.kycLevel} />
-                      </TableCell>
-
-                      {/* Balance */}
+                      <TableCell className="hidden md:table-cell"><StatusBadge status={user.statut} /></TableCell>
+                      <TableCell className="hidden sm:table-cell"><KYCBadge level={user.kycLevel} /></TableCell>
                       <TableCell className="hidden md:table-cell text-right">
-                        <span className="font-medium tabular-nums text-sm">{formatXOF(user.solde)}</span>
+                        <span className="font-medium tabular-nums text-sm">{new Intl.NumberFormat("fr-FR", { style: "decimal", minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(user.solde)} XOF</span>
                       </TableCell>
-
-                      {/* Last Activity */}
                       <TableCell className="hidden lg:table-cell text-sm text-muted-foreground">
-                        {formatDateFR(user.derniereActivite)}
+                        {new Intl.DateTimeFormat("fr-FR", { day: "2-digit", month: "short", year: "numeric" }).format(new Date(user.derniereActivite))}
                       </TableCell>
-
-                      {/* ── Actions Column ──────────────────────────────────── */}
                       <TableCell className="text-center">
                         <div className="flex items-center justify-center gap-0.5">
-                          {/* View */}
+                          {/* View — navigates to detail page */}
                           <Tooltip>
                             <TooltipTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="size-8 text-muted-foreground hover:text-foreground"
-                                onClick={() => setSelectedUser(user)}
-                              >
+                              <Button variant="ghost" size="icon" className="size-8 text-muted-foreground hover:text-foreground" onClick={() => setSelectedUserId(user.id)}>
                                 <Eye className="size-4" />
                               </Button>
                             </TooltipTrigger>
                             <TooltipContent>Voir les détails</TooltipContent>
                           </Tooltip>
-
                           {/* Edit */}
                           <Tooltip>
                             <TooltipTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="size-8 text-muted-foreground hover:text-foreground"
-                                onClick={() => setEditDialogUser(user)}
-                              >
+                              <Button variant="ghost" size="icon" className="size-8 text-muted-foreground hover:text-foreground">
                                 <Pencil className="size-3.5" />
                               </Button>
                             </TooltipTrigger>
                             <TooltipContent>Modifier</TooltipContent>
                           </Tooltip>
-
                           {/* More Actions Dropdown */}
                           <DropdownMenu>
                             <Tooltip>
                               <TooltipTrigger asChild>
                                 <DropdownMenuTrigger asChild>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="size-8 text-muted-foreground hover:text-foreground"
-                                  >
+                                  <Button variant="ghost" size="icon" className="size-8 text-muted-foreground hover:text-foreground">
                                     <MoreHorizontal className="size-4" />
                                   </Button>
                                 </DropdownMenuTrigger>
@@ -649,46 +441,34 @@ export function UsersPage() {
                                 Actions — {user.prenom} {user.nom}
                               </DropdownMenuLabel>
                               <DropdownMenuSeparator />
-                              <DropdownMenuItem className="gap-2" onClick={() => setSelectedUser(user)}>
-                                <Eye className="size-4" />
-                                Voir le profil
-                              </DropdownMenuItem>
-                              <DropdownMenuItem className="gap-2" onClick={() => setEditDialogUser(user)}>
-                                <Pencil className="size-4" />
-                                Modifier
+                              <DropdownMenuItem className="gap-2" onClick={() => setSelectedUserId(user.id)}>
+                                <Eye className="size-4" /> Voir le profil
                               </DropdownMenuItem>
                               <DropdownMenuItem className="gap-2">
-                                <FileText className="size-4" />
-                                Voir transactions
+                                <Pencil className="size-4" /> Modifier
+                              </DropdownMenuItem>
+                              <DropdownMenuItem className="gap-2" onClick={() => setSelectedUserId(user.id)}>
+                                <Users className="size-4" /> Voir transactions
+                              </DropdownMenuItem>
+                              <DropdownMenuItem className="gap-2" onClick={() => setSelectedUserId(user.id)}>
+                                <ShieldCheck className="size-4" /> Historique KYC
                               </DropdownMenuItem>
                               <DropdownMenuItem className="gap-2">
-                                <Star className="size-4" />
-                                Historique KYC
-                              </DropdownMenuItem>
-                              <DropdownMenuItem className="gap-2">
-                                <Mail className="size-4" />
-                                Envoyer un message
+                                <Mail className="size-4" /> Envoyer un message
                               </DropdownMenuItem>
                               <DropdownMenuSeparator />
                               {user.statut === "SUSPENDED" ? (
                                 <DropdownMenuItem className="gap-2 text-emerald-600 dark:text-emerald-400" onClick={() => setSuspendDialogUser(user)}>
-                                  <ShieldCheck className="size-4" />
-                                  Réactiver le compte
+                                  <ShieldCheck className="size-4" /> Réactiver le compte
                                 </DropdownMenuItem>
                               ) : (
                                 <DropdownMenuItem className="gap-2 text-amber-600 dark:text-amber-400" onClick={() => setSuspendDialogUser(user)}>
-                                  <Ban className="size-4" />
-                                  Suspendre le compte
+                                  <Ban className="size-4" /> Suspendre le compte
                                 </DropdownMenuItem>
                               )}
                               <DropdownMenuSeparator />
-                              <DropdownMenuItem
-                                variant="destructive"
-                                className="gap-2"
-                                onClick={() => setDeleteDialogUser(user)}
-                              >
-                                <Trash2 className="size-4" />
-                                Supprimer
+                              <DropdownMenuItem variant="destructive" className="gap-2" onClick={() => setDeleteDialogUser(user)}>
+                                <Trash2 className="size-4" /> Supprimer
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
@@ -701,260 +481,33 @@ export function UsersPage() {
             </Table>
           </div>
 
-          {/* ── Pagination ──────────────────────────────────────────────────── */}
+          {/* ── Pagination ────────────────────────────────────────────────── */}
           {filteredUsers.length > 0 && (
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4 border-t px-4 py-3">
               <p className="text-sm text-muted-foreground">
                 {startIndex}–{endIndex} sur {filteredUsers.length} utilisateur{filteredUsers.length !== 1 ? "s" : ""}
               </p>
               <div className="flex items-center gap-1">
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="size-8"
-                  disabled={safeCurrentPage <= 1}
-                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                >
-                  <ChevronLeft className="size-4" />
-                  <span className="sr-only">Précédent</span>
+                <Button variant="outline" size="icon" className="size-8" disabled={safeCurrentPage <= 1} onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}>
+                  <ChevronLeft className="size-4" /><span className="sr-only">Précédent</span>
                 </Button>
                 {getPageNumbers().map((page, idx) =>
                   page === "..." ? (
-                    <span key={`ellipsis-${idx}`} className="px-2 text-muted-foreground text-sm">
-                      ...
-                    </span>
+                    <span key={`ellipsis-${idx}`} className="px-2 text-muted-foreground text-sm">...</span>
                   ) : (
-                    <Button
-                      key={page}
-                      variant={page === safeCurrentPage ? "default" : "outline"}
-                      size="icon"
-                      className={`size-8 ${page === safeCurrentPage ? "bg-emerald-600 hover:bg-emerald-700 text-white" : ""}`}
-                      onClick={() => setCurrentPage(page)}
-                    >
+                    <Button key={page} variant={page === safeCurrentPage ? "default" : "outline"} size="icon" className={`size-8 ${page === safeCurrentPage ? "bg-emerald-600 hover:bg-emerald-700 text-white" : ""}`} onClick={() => setCurrentPage(page)}>
                       {page}
                     </Button>
                   )
                 )}
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="size-8"
-                  disabled={safeCurrentPage >= totalPages}
-                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                >
-                  <ChevronRight className="size-4" />
-                  <span className="sr-only">Suivant</span>
+                <Button variant="outline" size="icon" className="size-8" disabled={safeCurrentPage >= totalPages} onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}>
+                  <ChevronRight className="size-4" /><span className="sr-only">Suivant</span>
                 </Button>
               </div>
             </div>
           )}
         </CardContent>
       </Card>
-
-      {/* ── Detail Dialog ──────────────────────────────────────────────────── */}
-      <Dialog open={!!selectedUser} onOpenChange={(open) => !open && setSelectedUser(null)}>
-        <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
-          {selectedUser && (
-            <>
-              <DialogHeader>
-                <DialogTitle className="sr-only">Détails de {selectedUser.prenom} {selectedUser.nom}</DialogTitle>
-              </DialogHeader>
-
-              {/* User profile header */}
-              <div className="flex items-center gap-4">
-                <Avatar className="size-14 border-2 border-emerald-200 dark:border-emerald-800">
-                  <AvatarFallback className="bg-emerald-100 text-emerald-700 text-lg font-bold dark:bg-emerald-950 dark:text-emerald-300">
-                    {getInitials(selectedUser.nom, selectedUser.prenom)}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="min-w-0 flex-1">
-                  <h2 className="text-xl font-bold truncate">
-                    {selectedUser.prenom} {selectedUser.nom}
-                  </h2>
-                  <p className="text-sm text-muted-foreground font-mono">{selectedUser.id}</p>
-                </div>
-                <div className="flex gap-1.5 shrink-0">
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button variant="outline" size="icon" className="size-8" onClick={() => { setEditDialogUser(selectedUser); setSelectedUser(null) }}>
-                        <Pencil className="size-3.5" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>Modifier</TooltipContent>
-                  </Tooltip>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        className="size-8 text-destructive hover:text-destructive"
-                        onClick={() => { setDeleteDialogUser(selectedUser); setSelectedUser(null) }}
-                      >
-                        <Trash2 className="size-3.5" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>Supprimer</TooltipContent>
-                  </Tooltip>
-                </div>
-              </div>
-
-              <Separator />
-
-              {/* Contact info */}
-              <div className="space-y-3">
-                <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Informations de contact</h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div className="flex items-center gap-2.5 p-2 rounded-lg bg-muted/50">
-                    <Mail className="size-4 text-muted-foreground shrink-0" />
-                    <div className="min-w-0">
-                      <p className="text-xs text-muted-foreground">Email</p>
-                      <p className="text-sm font-medium truncate">{selectedUser.email}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2.5 p-2 rounded-lg bg-muted/50">
-                    <Phone className="size-4 text-muted-foreground shrink-0" />
-                    <div className="min-w-0">
-                      <p className="text-xs text-muted-foreground">Téléphone</p>
-                      <p className="text-sm font-medium">{selectedUser.telephone}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2.5 p-2 rounded-lg bg-muted/50">
-                    <MapPin className="size-4 text-muted-foreground shrink-0" />
-                    <div className="min-w-0">
-                      <p className="text-xs text-muted-foreground">Pays</p>
-                      <p className="text-sm font-medium">{selectedUser.pays}</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <Separator />
-
-              {/* Account info */}
-              <div className="space-y-3">
-                <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Informations du compte</h3>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-1">
-                    <p className="text-xs text-muted-foreground">Statut</p>
-                    <StatusBadge status={selectedUser.statut} />
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-xs text-muted-foreground">Niveau KYC</p>
-                    <KYCBadge level={selectedUser.kycLevel} />
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-xs text-muted-foreground">Solde</p>
-                    <p className="text-sm font-bold text-emerald-700 dark:text-emerald-400 tabular-nums">
-                      {formatXOF(selectedUser.solde)}
-                    </p>
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-xs text-muted-foreground">Date d&apos;inscription</p>
-                    <p className="text-sm font-medium">{formatDateFull(selectedUser.dateInscription)}</p>
-                  </div>
-                </div>
-              </div>
-
-              <Separator />
-
-              {/* Action buttons */}
-              <div className="flex flex-col sm:flex-row gap-2">
-                <Button variant="outline" className="flex-1 gap-2">
-                  <Eye className="size-4" />
-                  Voir Transactions
-                </Button>
-                <Button variant="outline" className="flex-1 gap-2">
-                  <Star className="size-4" />
-                  Historique KYC
-                </Button>
-                {selectedUser.statut === "SUSPENDED" ? (
-                  <Button className="flex-1 gap-2 bg-emerald-600 hover:bg-emerald-700 text-white">
-                    <ShieldCheck className="size-4" />
-                    Réactiver
-                  </Button>
-                ) : (
-                  <Button variant="destructive" className="flex-1 gap-2">
-                    <ShieldOff className="size-4" />
-                    Suspendre
-                  </Button>
-                )}
-              </div>
-            </>
-          )}
-        </DialogContent>
-      </Dialog>
-
-      {/* ── Edit Dialog ─────────────────────────────────────────────────────── */}
-      <Dialog open={!!editDialogUser} onOpenChange={(open) => !open && setEditDialogUser(null)}>
-        <DialogContent className="sm:max-w-md">
-          {editDialogUser && (
-            <>
-              <DialogHeader>
-                <DialogTitle>Modifier l&apos;utilisateur</DialogTitle>
-                <DialogDescription>
-                  Modifier les informations de {editDialogUser.prenom} {editDialogUser.nom}
-                </DialogDescription>
-              </DialogHeader>
-              <div className="space-y-4 py-2">
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Prénom</label>
-                    <Input defaultValue={editDialogUser.prenom} />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Nom</label>
-                    <Input defaultValue={editDialogUser.nom} />
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Email</label>
-                  <Input defaultValue={editDialogUser.email} type="email" />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Téléphone</label>
-                  <Input defaultValue={editDialogUser.telephone} />
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Statut</label>
-                    <Select defaultValue={editDialogUser.statut}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="ACTIVE">Actif</SelectItem>
-                        <SelectItem value="INACTIVE">Inactif</SelectItem>
-                        <SelectItem value="SUSPENDED">Suspendu</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Niveau KYC</label>
-                    <Select defaultValue={editDialogUser.kycLevel}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Tier 0">Tier 0</SelectItem>
-                        <SelectItem value="Tier 1">Tier 1</SelectItem>
-                        <SelectItem value="Tier 2">Tier 2</SelectItem>
-                        <SelectItem value="Tier 3">Tier 3</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-              </div>
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setEditDialogUser(null)}>Annuler</Button>
-                <Button className="bg-emerald-600 hover:bg-emerald-700 text-white gap-2" onClick={() => setEditDialogUser(null)}>
-                  <Pencil className="size-4" />
-                  Enregistrer
-                </Button>
-              </DialogFooter>
-            </>
-          )}
-        </DialogContent>
-      </Dialog>
 
       {/* ── Delete Confirmation ─────────────────────────────────────────────── */}
       <AlertDialog open={!!deleteDialogUser} onOpenChange={(open) => !open && setDeleteDialogUser(null)}>
@@ -963,21 +516,14 @@ export function UsersPage() {
             <AlertDialogTitle>Supprimer l&apos;utilisateur</AlertDialogTitle>
             <AlertDialogDescription>
               {deleteDialogUser && (
-                <>
-                  Êtes-vous sûr de vouloir supprimer <strong>{deleteDialogUser.prenom} {deleteDialogUser.nom}</strong> ({deleteDialogUser.id}) ?
-                  Cette action est irréversible et toutes les données associées seront définitivement supprimées.
-                </>
+                <>Êtes-vous sûr de vouloir supprimer <strong>{deleteDialogUser.prenom} {deleteDialogUser.nom}</strong> ({deleteDialogUser.id}) ? Cette action est irréversible.</>
               )}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Annuler</AlertDialogCancel>
-            <AlertDialogAction
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90 gap-2"
-              onClick={() => setDeleteDialogUser(null)}
-            >
-              <Trash2 className="size-4" />
-              Supprimer définitivement
+            <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90 gap-2" onClick={() => setDeleteDialogUser(null)}>
+              <Trash2 className="size-4" /> Supprimer définitivement
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -987,36 +533,25 @@ export function UsersPage() {
       <AlertDialog open={!!suspendDialogUser} onOpenChange={(open) => !open && setSuspendDialogUser(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>
-              {suspendDialogUser?.statut === "SUSPENDED" ? "Réactiver le compte" : "Suspendre le compte"}
-            </AlertDialogTitle>
+            <AlertDialogTitle>{suspendDialogUser?.statut === "SUSPENDED" ? "Réactiver le compte" : "Suspendre le compte"}</AlertDialogTitle>
             <AlertDialogDescription>
               {suspendDialogUser?.statut === "SUSPENDED" ? (
-                <>
-                  Êtes-vous sûr de vouloir réactiver le compte de <strong>{suspendDialogUser?.prenom} {suspendDialogUser?.nom}</strong> ?
-                  L&apos;utilisateur pourra à nouveau accéder à la plateforme.
-                </>
+                <>Êtes-vous sûr de vouloir réactiver le compte de <strong>{suspendDialogUser?.prenom} {suspendDialogUser?.nom}</strong> ?</>
               ) : (
-                <>
-                  Êtes-vous sûr de vouloir suspendre le compte de <strong>{suspendDialogUser?.prenom} {suspendDialogUser?.nom}</strong> ?
-                  L&apos;utilisateur ne pourra plus accéder à la plateforme jusqu&apos;à réactivation.
-                </>
+                <>Êtes-vous sûr de vouloir suspendre le compte de <strong>{suspendDialogUser?.prenom} {suspendDialogUser?.nom}</strong> ?</>
               )}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Annuler</AlertDialogCancel>
             <AlertDialogAction
-              className={suspendDialogUser?.statut === "SUSPENDED"
-                ? "bg-emerald-600 hover:bg-emerald-700 text-white gap-2"
-                : "bg-amber-600 hover:bg-amber-700 text-white gap-2"
-              }
+              className={suspendDialogUser?.statut === "SUSPENDED" ? "bg-emerald-600 hover:bg-emerald-700 text-white gap-2" : "bg-amber-600 hover:bg-amber-700 text-white gap-2"}
               onClick={() => setSuspendDialogUser(null)}
             >
               {suspendDialogUser?.statut === "SUSPENDED" ? (
                 <><ShieldCheck className="size-4" /> Réactiver</>
               ) : (
-                <><Ban className="size-4" /> Suspendre</>
+                <><ShieldOff className="size-4" /> Suspendre</>
               )}
             </AlertDialogAction>
           </AlertDialogFooter>
