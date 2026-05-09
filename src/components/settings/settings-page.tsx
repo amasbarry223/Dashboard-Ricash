@@ -28,6 +28,8 @@ import {
   FileText,
   ChevronRight,
   Languages,
+  Handshake,
+  Settings2,
 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -86,6 +88,8 @@ import {
   activeSessions,
   auditLog,
 } from "@/lib/mock-data"
+import { PartnersTab } from "./partners-tab"
+import { ConfigurationTab } from "./configuration-tab"
 
 /* ─── Profile Tab ──────────────────────────────────────────────────────────── */
 
@@ -1090,7 +1094,7 @@ export function SettingsPage() {
           </div>
           <div>
             <h1 className="text-2xl font-bold">Paramètres</h1>
-            <p className="text-sm text-muted-foreground">Gérez votre profil, sécurité et préférences</p>
+            <p className="text-sm text-muted-foreground">Profil, sécurité, préférences, partenaires et configuration</p>
           </div>
         </div>
       </div>
@@ -1114,6 +1118,14 @@ export function SettingsPage() {
             <Palette className="size-3.5" />
             Apparence
           </TabsTrigger>
+          <TabsTrigger value="partners" className="gap-1.5">
+            <Handshake className="size-3.5" />
+            Partenaires
+          </TabsTrigger>
+          <TabsTrigger value="configuration" className="gap-1.5">
+            <Settings2 className="size-3.5" />
+            Configuration
+          </TabsTrigger>
           <TabsTrigger value="audit" className="gap-1.5">
             <FileText className="size-3.5" />
             Journal
@@ -1134,6 +1146,14 @@ export function SettingsPage() {
 
         <TabsContent value="appearance">
           <AppearanceTab />
+        </TabsContent>
+
+        <TabsContent value="partners">
+          <PartnersTab />
+        </TabsContent>
+
+        <TabsContent value="configuration">
+          <ConfigurationTab />
         </TabsContent>
 
         <TabsContent value="audit">

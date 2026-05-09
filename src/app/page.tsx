@@ -9,9 +9,7 @@ import { UsersPage } from "@/components/users/users-page"
 import { KycPage } from "@/components/kyc/kyc-page"
 import { TransactionsPage } from "@/components/transactions/transactions-page"
 import { AgentsPage } from "@/components/agents/agents-page"
-import { PartnersPage } from "@/components/partners/partners-page"
 import { NotificationsPage } from "@/components/notifications/notifications-page"
-import { ConfigurationPage } from "@/components/configuration/configuration-page"
 import { SettingsPage } from "@/components/settings/settings-page"
 
 const pageComponents: Record<string, React.ComponentType> = {
@@ -20,9 +18,7 @@ const pageComponents: Record<string, React.ComponentType> = {
   kyc: KycPage,
   transactions: TransactionsPage,
   agents: AgentsPage,
-  partners: PartnersPage,
   notifications: NotificationsPage,
-  configuration: ConfigurationPage,
   settings: SettingsPage,
 }
 

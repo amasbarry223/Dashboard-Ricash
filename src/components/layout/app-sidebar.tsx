@@ -6,7 +6,6 @@ import {
   ShieldCheck,
   ArrowLeftRight,
   UserCog,
-  Handshake,
   Bell,
   Settings,
   ChevronDown,
@@ -49,9 +48,7 @@ const mainNav: { key: PageKey; label: string; icon: React.ElementType }[] = [
 ]
 
 const secondaryNav: { key: PageKey; label: string; icon: React.ElementType }[] = [
-  { key: "partners", label: "Partenaires", icon: Handshake },
   { key: "notifications", label: "Notifications", icon: Bell },
-  { key: "configuration", label: "Configuration", icon: Settings },
   { key: "settings", label: "Paramètres", icon: User },
 ]
 

@@ -6,9 +6,7 @@ export type PageKey =
   | "kyc"
   | "transactions"
   | "agents"
-  | "partners"
   | "notifications"
-  | "configuration"
   | "settings"
 
 interface AppStore {

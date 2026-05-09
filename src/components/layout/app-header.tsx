@@ -26,9 +26,8 @@ const pageTitles: Record<string, string> = {
   kyc: "KYC & Conformité",
   transactions: "Gestion des Transactions",
   agents: "Gestion des Agents",
-  partners: "Gestion des Partenaires",
   notifications: "Centre de Notifications",
-  configuration: "Configuration de la Plateforme",
+  settings: "Paramètres",
 }
 
 export function AppHeader() {
