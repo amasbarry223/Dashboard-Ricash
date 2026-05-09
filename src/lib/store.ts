@@ -9,6 +9,7 @@ export type PageKey =
   | "partners"
   | "notifications"
   | "configuration"
+  | "settings"
 
 interface AppStore {
   currentPage: PageKey

@@ -12,6 +12,7 @@ import { AgentsPage } from "@/components/agents/agents-page"
 import { PartnersPage } from "@/components/partners/partners-page"
 import { NotificationsPage } from "@/components/notifications/notifications-page"
 import { ConfigurationPage } from "@/components/configuration/configuration-page"
+import { SettingsPage } from "@/components/settings/settings-page"
 
 const pageComponents: Record<string, React.ComponentType> = {
   dashboard: DashboardPage,
@@ -22,6 +23,7 @@ const pageComponents: Record<string, React.ComponentType> = {
   partners: PartnersPage,
   notifications: NotificationsPage,
   configuration: ConfigurationPage,
+  settings: SettingsPage,
 }
 
 export default function Home() {

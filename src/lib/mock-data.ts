@@ -294,6 +294,90 @@ export const adminUsers: AdminUser[] = [
   { id: "ADM-005", nom: "Fatoumata Sacko", email: "fatoumata.sacko@ricash.com", role: "Admin Reporting", statut: "INACTIVE", derniereConnexion: "2025-05-20 10:00" },
 ]
 
+// ─── Settings / Paramètres ──────────────────────────────────────────────────
+export interface AdminProfile {
+  id: string
+  nom: string
+  email: string
+  telephone: string
+  role: string
+  avatar: string
+  departement: string
+  dateCreation: string
+  derniereConnexion: string
+  langue: string
+  fuseauHoraire: string
+}
+
+export const adminProfile: AdminProfile = {
+  id: "ADM-001",
+  nom: "Super Admin",
+  email: "superadmin@ricash.com",
+  telephone: "+223 76 00 00 01",
+  role: "Super Admin",
+  avatar: "SA",
+  departement: "Direction Générale",
+  dateCreation: "2024-01-01",
+  derniereConnexion: "2025-06-10 14:00",
+  langue: "Français",
+  fuseauHoraire: "Africa/Bamako (GMT+0)",
+}
+
+export interface NotificationPreference {
+  id: string
+  categorie: string
+  description: string
+  email: boolean
+  sms: boolean
+  push: boolean
+  inApp: boolean
+}
+
+export const notificationPreferences: NotificationPreference[] = [
+  { id: "NP-001", categorie: "Transactions", description: "Alertes sur les transactions suspectes et échecs", email: true, sms: true, push: true, inApp: true },
+  { id: "NP-002", categorie: "KYC & Conformité", description: "Nouvelles demandes KYC et alertes de conformité", email: true, sms: false, push: true, inApp: true },
+  { id: "NP-003", categorie: "Sécurité", description: "Connexions suspectes, tentatives de piratage", email: true, sms: true, push: true, inApp: true },
+  { id: "NP-004", categorie: "Agents", description: "Nouvelles inscriptions agents, alertes float bas", email: true, sms: false, push: false, inApp: true },
+  { id: "NP-005", categorie: "Système", description: "Pannes de services, maintenance planifiée", email: true, sms: true, push: true, inApp: true },
+  { id: "NP-006", categorie: "Rapports", description: "Rapports quotidiens et hebdomadaires disponibles", email: true, sms: false, push: false, inApp: false },
+  { id: "NP-007", categorie: "Partenaires", description: "Statut des intégrations et échanges API", email: true, sms: false, push: true, inApp: true },
+]
+
+export interface ActiveSession {
+  id: string
+  appareil: string
+  navigateur: string
+  localisation: string
+  ip: string
+  dernierActivite: string
+  actif: boolean
+}
+
+export const activeSessions: ActiveSession[] = [
+  { id: "SES-001", appareil: "MacBook Pro", navigateur: "Chrome 126", localisation: "Bamako, Mali", ip: "196.47.xxx.xxx", dernierActivite: "2025-06-10 14:32", actif: true },
+  { id: "SES-002", appareil: "iPhone 15", navigateur: "Safari Mobile", localisation: "Bamako, Mali", ip: "154.72.xxx.xxx", dernierActivite: "2025-06-10 11:15", actif: true },
+  { id: "SES-003", appareil: "Windows Desktop", navigateur: "Firefox 127", localisation: "Bamako, Mali", ip: "196.47.xxx.xxx", dernierActivite: "2025-06-09 17:45", actif: false },
+]
+
+export interface AuditLogEntry {
+  id: string
+  action: string
+  details: string
+  date: string
+  ip: string
+}
+
+export const auditLog: AuditLogEntry[] = [
+  { id: "LOG-001", action: "Connexion", details: "Connexion réussie depuis Chrome / MacBook Pro", date: "2025-06-10 14:00", ip: "196.47.xxx.xxx" },
+  { id: "LOG-002", action: "Modification KYC", details: "Approbation KYC-006 (Abdoulaye Bah → Tier 2)", date: "2025-06-10 13:45", ip: "196.47.xxx.xxx" },
+  { id: "LOG-003", action: "Configuration frais", details: "Modification taux transfert inter-utilisateurs: 1% → 1.1%", date: "2025-06-10 11:20", ip: "196.47.xxx.xxx" },
+  { id: "LOG-004", action: "Suspension utilisateur", details: "Suspension USR-003 (Moussa Keita) — Fraude suspectée", date: "2025-06-09 16:30", ip: "196.47.xxx.xxx" },
+  { id: "LOG-005", action: "Ajout admin", details: "Création compte Admin Support — Seydou Bah", date: "2025-06-08 10:00", ip: "196.47.xxx.xxx" },
+  { id: "LOG-006", action: "Export données", details: "Export rapport transactions Juin 2025 (CSV)", date: "2025-06-07 09:15", ip: "196.47.xxx.xxx" },
+  { id: "LOG-007", action: "Changement mot de passe", details: "Mise à jour du mot de passe personnel", date: "2025-06-05 08:30", ip: "196.47.xxx.xxx" },
+  { id: "LOG-008", action: "Connexion", details: "Connexion réussie depuis Safari / iPhone 15", date: "2025-06-05 08:00", ip: "154.72.xxx.xxx" },
+]
+
 // ─── Services Status ─────────────────────────────────────────────────────────
 export interface ServiceStatus {
   name: string

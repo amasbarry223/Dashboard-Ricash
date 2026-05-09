@@ -30,3 +30,30 @@ Stage Summary:
 - Dark mode support via next-themes
 - Mock data covering: users, KYC requests, transactions, agents, partners, notifications, configuration
 - All lint checks pass, dev server running on port 3000
+
+---
+Task ID: 2
+Agent: Main Agent
+Task: Add Paramètres (Settings) page to RICASH Back-Office
+
+Work Log:
+- Added "settings" to PageKey type in Zustand store (src/lib/store.ts)
+- Added settings mock data to mock-data.ts: adminProfile, notificationPreferences, activeSessions, auditLog
+- Created comprehensive Settings page (src/components/settings/settings-page.tsx) with 5 tabs:
+  - Profil: avatar with upload overlay, personal info form, regional settings (language, timezone, currency)
+  - Sécurité: password management with change dialog + strength indicator, 2FA toggle with TOTP/Email methods, login alerts, session timeout, active sessions management, danger zone with account deletion
+  - Notifications: global channel toggles (Email/Push/SMS/In-App), detailed per-category notification preferences table, quiet hours
+  - Apparence: theme selection (Light/Dark/System) with visual cards, layout preferences (sidebar position, density, compact mode, animations), accessibility settings (text size, high contrast, reduced motion)
+  - Journal: audit log table with color-coded action badges, export button
+- Added "Paramètres" nav item to sidebar secondary navigation
+- Made sidebar footer dropdown "Mon Profil" and "Paramètres" links navigate to settings page
+- Wired up SettingsPage in page.tsx page components map
+- Verified lint passes and dev server responds with HTTP 200
+
+Stage Summary:
+- Complete Paramètres page with 5 tabs: Profil, Sécurité, Notifications, Apparence, Journal
+- All interactive controls functional (toggles, forms, dialogs, switches)
+- Consistent emerald fintech design with dark mode support
+- French labels throughout
+- Sidebar navigation updated with new "Paramètres" entry
+- All lint checks pass, dev server running on port 3000

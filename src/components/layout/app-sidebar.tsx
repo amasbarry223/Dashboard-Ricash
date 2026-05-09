@@ -12,6 +12,7 @@ import {
   ChevronDown,
   LogOut,
   Gem,
+  User,
 } from "lucide-react"
 import {
   Sidebar,
@@ -51,6 +52,7 @@ const secondaryNav: { key: PageKey; label: string; icon: React.ElementType }[] =
   { key: "partners", label: "Partenaires", icon: Handshake },
   { key: "notifications", label: "Notifications", icon: Bell },
   { key: "configuration", label: "Configuration", icon: Settings },
+  { key: "settings", label: "Paramètres", icon: User },
 ]
 
 export function AppSidebar() {
@@ -171,10 +173,12 @@ export function AppSidebar() {
                 align="end"
                 sideOffset={4}
               >
-                <DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setCurrentPage("settings")}>
+                  <User className="mr-2 size-4" />
                   <span>Mon Profil</span>
                 </DropdownMenuItem>
-                <DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setCurrentPage("settings")}>
+                  <Settings className="mr-2 size-4" />
                   <span>Paramètres</span>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
