@@ -166,7 +166,14 @@ export function TransactionsPage() {
 
   // Filter & sort transactions (must be before conditional return — hooks order)
   const filtered = useMemo(() => {
-    const result = transactions.filter((tx) => {
+    // Deduplicate by ID first — same transaction may appear in multiple user sections
+    const seen = new Set<string>()
+    const deduped = transactions.filter((tx) => {
+      if (seen.has(tx.id)) return false
+      seen.add(tx.id)
+      return true
+    })
+    const result = deduped.filter((tx) => {
       if (searchQuery) {
         const query = searchQuery.toLowerCase().trim()
         const searchable = [
