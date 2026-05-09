@@ -5,10 +5,10 @@ import {
   Bell, Send, CheckCircle, XCircle, Clock, AlertTriangle,
   Smartphone, Mail, BellRing, Shield, FileCheck, Settings,
   Users, UserCheck, Eye, ChevronLeft, ChevronRight,
-  FilterX, Megaphone, FileText, Sparkles, AlertOctagon,
-  Info, Zap, Wrench, ArrowRight, Plus, Search,
-  Radio, CalendarDays, MessageSquare, TrendingUp, BarChart3,
-  RefreshCw, Copy, Trash2, MoreHorizontal, ChevronDown,
+  FilterX, Megaphone, Sparkles, AlertOctagon,
+  Info, Wrench, Plus, Search,
+  Radio, CalendarDays, MessageSquare, BarChart3,
+  RefreshCw, Copy, Trash2, MoreHorizontal,
 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -32,9 +32,9 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import {
-  sentNotifications, notificationTemplates,
+  sentNotifications,
   type NotificationType, type NotificationChannel, type NotificationAudience, type NotificationPriority,
-  type SentNotification, type NotificationTemplate,
+  type SentNotification,
 } from "@/lib/mock-data"
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -208,8 +208,6 @@ export function NotificationsPage() {
   const [formTitle, setFormTitle] = useState("")
   const [formMessage, setFormMessage] = useState("")
   const [formScheduleNow, setFormScheduleNow] = useState(true)
-  const [selectedTemplate, setSelectedTemplate] = useState<string>("")
-
   // ── History state ──
   const [histPage, setHistPage] = useState(1)
   const [histTypeFilter, setHistTypeFilter] = useState<string>("all")
@@ -225,18 +223,6 @@ export function NotificationsPage() {
     setFormChannels((prev) => prev.includes(ch) ? prev.filter((c) => c !== ch) : [...prev, ch])
   }
 
-  const applyTemplate = (tplId: string) => {
-    const tpl = notificationTemplates.find((t) => t.id === tplId)
-    if (tpl) {
-      setFormType(tpl.categorie)
-      setFormAudience(tpl.audienceSuggere)
-      setFormChannels([...tpl.canauxSuggere])
-      setFormTitle(tpl.objet)
-      setFormMessage(tpl.contenu)
-      setSelectedTemplate(tplId)
-    }
-  }
-
   const resetForm = () => {
     setFormType("SYSTEM")
     setFormAudience("ALL_USERS")
@@ -245,7 +231,6 @@ export function NotificationsPage() {
     setFormTitle("")
     setFormMessage("")
     setFormScheduleNow(true)
-    setSelectedTemplate("")
   }
 
   // ── Filtered history ──
@@ -305,7 +290,7 @@ export function NotificationsPage() {
       </div>
 
       {/* ── Stats ──────────────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <StatCard
           icon={Send}
           iconClass="text-emerald-600 dark:text-emerald-400"
@@ -341,19 +326,12 @@ export function NotificationsPage() {
           subValue={`${failedCount} échouées`}
           subClass="text-red-600 dark:text-red-400"
         />
-        <StatCard
-          icon={FileText}
-          iconClass="text-purple-600 dark:text-purple-400"
-          bgClass="bg-purple-100 dark:bg-purple-950"
-          label="Modèles disponibles"
-          value={notificationTemplates.length.toString()}
-          subValue="Prêts à l'emploi"
-        />
+
       </div>
 
       {/* ── Tabs ───────────────────────────────────────────────────────────── */}
       <Tabs defaultValue="create" className="space-y-4">
-        <TabsList className="w-full sm:w-auto grid grid-cols-3 sm:inline-flex h-10">
+        <TabsList className="w-full sm:w-auto grid grid-cols-2 sm:inline-flex h-10">
           <TabsTrigger value="create" className="gap-1.5 text-xs sm:text-sm">
             <Send className="size-3.5 hidden sm:block" />
             Créer une notification
@@ -362,10 +340,6 @@ export function NotificationsPage() {
             <Clock className="size-3.5 hidden sm:block" />
             Historique
             <Badge variant="secondary" className="ml-1 text-[10px] px-1.5 py-0">{totalSent}</Badge>
-          </TabsTrigger>
-          <TabsTrigger value="templates" className="gap-1.5 text-xs sm:text-sm">
-            <FileText className="size-3.5 hidden sm:block" />
-            Modèles
           </TabsTrigger>
         </TabsList>
 
@@ -376,52 +350,6 @@ export function NotificationsPage() {
           <div className="grid grid-cols-1 xl:grid-cols-5 gap-4">
             {/* ── Form (3 cols) ── */}
             <div className="xl:col-span-3 space-y-4">
-              {/* Quick Template Selection */}
-              <Card>
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-2 mb-3">
-                    <Zap className="size-4 text-amber-500" />
-                    <Label className="text-sm font-semibold">Démarrer depuis un modèle</Label>
-                  </div>
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                    {notificationTemplates.slice(0, 4).map((tpl) => {
-                      const tcfg = typeConfig[tpl.categorie]
-                      const TIcon = tcfg.icon
-                      const isActive = selectedTemplate === tpl.id
-                      return (
-                        <button
-                          key={tpl.id}
-                          type="button"
-                          onClick={() => applyTemplate(tpl.id)}
-                          className={`flex items-center gap-2 p-2.5 rounded-lg border-2 text-left transition-all text-xs ${
-                            isActive
-                              ? "border-emerald-400 bg-emerald-50 dark:bg-emerald-950/30 dark:border-emerald-700"
-                              : "border-muted bg-background hover:border-muted-foreground/30"
-                          }`}
-                        >
-                          <div className={`flex size-7 items-center justify-center rounded-md shrink-0 ${tcfg.bgClass}`}>
-                            <TIcon className={`size-3.5 ${isActive ? "text-emerald-600 dark:text-emerald-400" : ""}`} />
-                          </div>
-                          <span className="font-medium truncate">{tpl.nom}</span>
-                        </button>
-                      )
-                    })}
-                  </div>
-                  <div className="mt-2">
-                    <Select value={selectedTemplate} onValueChange={applyTemplate}>
-                      <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Plus de modèles..." /></SelectTrigger>
-                      <SelectContent>
-                        {notificationTemplates.map((tpl) => (
-                          <SelectItem key={tpl.id} value={tpl.id}>
-                            {tpl.nom} — {typeConfig[tpl.categorie]?.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </CardContent>
-              </Card>
-
               {/* Main Form */}
               <Card>
                 <CardHeader className="pb-3">
@@ -971,79 +899,6 @@ export function NotificationsPage() {
               )}
             </CardContent>
           </Card>
-        </TabsContent>
-
-        {/* ═══════════════════════════════════════════════════════════════════
-            TAB: MODÈLES
-        ═══════════════════════════════════════════════════════════════════ */}
-        <TabsContent value="templates" className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-            {notificationTemplates.map((tpl) => {
-              const tcfg = typeConfig[tpl.categorie]
-              const TIcon = tcfg.icon
-              return (
-                <Card key={tpl.id} className="hover:shadow-md transition-shadow group">
-                  <CardHeader className="pb-3">
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex items-center gap-2.5">
-                        <div className={`flex size-9 items-center justify-center rounded-xl ${tcfg.bgClass}`}>
-                          <TIcon className="size-4" />
-                        </div>
-                        <div>
-                          <CardTitle className="text-sm">{tpl.nom}</CardTitle>
-                          <CardDescription className="text-xs">{tcfg.label}</CardDescription>
-                        </div>
-                      </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    <div>
-                      <p className="text-xs text-muted-foreground mb-0.5">Objet</p>
-                      <p className="text-sm font-medium">{tpl.objet}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-muted-foreground mb-0.5">Contenu</p>
-                      <p className="text-sm text-muted-foreground line-clamp-3">{tpl.contenu}</p>
-                    </div>
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <p className="text-xs text-muted-foreground">Canaux :</p>
-                      {tpl.canauxSuggere.map((ch) => <ChannelIcon key={ch} channel={ch} />)}
-                    </div>
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <p className="text-xs text-muted-foreground">Audience :</p>
-                      <span className="text-xs font-medium">{audienceConfig[tpl.audienceSuggere]?.shortLabel}</span>
-                    </div>
-                    {tpl.variableSlots.length > 0 && (
-                      <div className="flex items-center gap-1.5 flex-wrap">
-                        <p className="text-xs text-muted-foreground">Variables :</p>
-                        {tpl.variableSlots.map((v) => (
-                          <Badge key={v} variant="outline" className="text-[10px] px-1.5 py-0 font-mono">
-                            {`{{${v}}}`}
-                          </Badge>
-                        ))}
-                      </div>
-                    )}
-                    <Separator />
-                    <div className="flex gap-2">
-                      <Button
-                        variant="default"
-                        size="sm"
-                        className="flex-1 gap-1.5 text-xs bg-emerald-600 hover:bg-emerald-700 text-white"
-                        onClick={() => applyTemplate(tpl.id)}
-                      >
-                        <Send className="size-3" />
-                        Utiliser
-                      </Button>
-                      <Button variant="outline" size="sm" className="gap-1.5 text-xs">
-                        <Eye className="size-3" />
-                        Aperçu
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              )
-            })}
-          </div>
         </TabsContent>
       </Tabs>
     </div>
