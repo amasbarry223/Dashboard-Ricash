@@ -365,7 +365,9 @@ export const partners: Partner[] = [
 
 // ─── Notifications ───────────────────────────────────────────────────────────
 export type NotificationChannel = "SMS" | "EMAIL" | "PUSH"
-export type NotificationType = "OTP" | "TRANSACTION" | "SECURITY" | "KYC" | "SYSTEM"
+export type NotificationType = "OTP" | "TRANSACTION" | "SECURITY" | "KYC" | "SYSTEM" | "PROMOTION" | "MAINTENANCE"
+export type NotificationAudience = "ALL_USERS" | "ALL_AGENTS" | "ALL" | "SPECIFIC_USERS" | "SPECIFIC_AGENTS"
+export type NotificationPriority = "NORMAL" | "HIGH" | "URGENT"
 
 export interface Notification {
   id: string
@@ -377,6 +379,34 @@ export interface Notification {
   date: string
 }
 
+export interface SentNotification {
+  id: string
+  titre: string
+  type: NotificationType
+  canaux: NotificationChannel[]
+  audience: NotificationAudience
+  audienceDetail: string
+  message: string
+  priorite: NotificationPriority
+  statut: "SENT" | "DELIVERED" | "PARTIAL" | "FAILED"
+  nbDestinataires: number
+  nbDelivres: number
+  nbEchoues: number
+  dateEnvoi: string
+  envoyePar: string
+}
+
+export interface NotificationTemplate {
+  id: string
+  nom: string
+  categorie: NotificationType
+  objet: string
+  contenu: string
+  canauxSuggere: NotificationChannel[]
+  audienceSuggere: NotificationAudience
+  variableSlots: string[]
+}
+
 export const notifications: Notification[] = [
   { id: "NOT-001", type: "OTP", canal: "SMS", destinataire: "+223 76 12 34 56", message: "Code OTP: 8472 - Validation inscription Ricash", statut: "DELIVERED", date: "2025-06-10 14:35" },
   { id: "NOT-002", type: "TRANSACTION", canal: "SMS", destinataire: "+223 77 23 45 67", message: "Vous avez reçu 75 000 XOF de Amadou Diallo", statut: "DELIVERED", date: "2025-06-10 13:16" },
@@ -386,6 +416,30 @@ export const notifications: Notification[] = [
   { id: "NOT-006", type: "OTP", canal: "SMS", destinataire: "+223 70 56 78 90", message: "Code OTP: 2951 - Changement code secret", statut: "FAILED", date: "2025-06-10 09:45" },
   { id: "NOT-007", type: "SYSTEM", canal: "PUSH", destinataire: "All Admins", message: "Alerte: KYC Service indisponible - Vérification en cours", statut: "SENT", date: "2025-06-10 08:30" },
   { id: "NOT-008", type: "TRANSACTION", canal: "SMS", destinataire: "+223 71 67 89 01", message: "Retrait de 50 000 XOF effectué avec succès", statut: "DELIVERED", date: "2025-06-09 16:42" },
+]
+
+export const sentNotifications: SentNotification[] = [
+  { id: "SN-001", titre: "Maintenance planifiée — 15 Juin", type: "MAINTENANCE", canaux: ["SMS", "PUSH"], audience: "ALL_USERS", audienceDetail: "23 847 utilisateurs actifs", message: "Cher utilisateur, une maintenance est planifiée le 15 juin de 02h à 05h GMT. Les services seront temporairement indisponibles. Merci de votre compréhension.", priorite: "HIGH", statut: "DELIVERED", nbDestinataires: 23847, nbDelivres: 23412, nbEchoues: 435, dateEnvoi: "2025-06-09 10:00", envoyePar: "Super Admin" },
+  { id: "SN-002", titre: "Nouveaux plafonds KYC Tier 2", type: "KYC", canaux: ["SMS", "EMAIL"], audience: "ALL_USERS", audienceDetail: "8 320 utilisateurs Tier 2", message: "Bonne nouvelle ! Vos plafonds ont été augmentés : Dépôt 5M XOF/mois, Retrait 1.5M XOF/mois. Vérifiez votre espace pour plus de détails.", priorite: "NORMAL", statut: "DELIVERED", nbDestinataires: 8320, nbDelivres: 8156, nbEchoues: 164, dateEnvoi: "2025-06-08 09:00", envoyePar: "Admin Conformité" },
+  { id: "SN-003", titre: "Rechargement Float — Action requise", type: "SYSTEM", canaux: ["SMS"], audience: "ALL_AGENTS", audienceDetail: "1 245 agents actifs", message: "Votre float est inférieur au seuil minimum. Veuillez procéder à un rechargement pour continuer à offrir le service dépôt/retrait.", priorite: "URGENT", statut: "PARTIAL", nbDestinataires: 1245, nbDelivres: 1189, nbEchoues: 56, dateEnvoi: "2025-06-07 14:30", envoyePar: "Admin Financier" },
+  { id: "SN-004", titre: "Alerte Sécurité — Vérification requise", type: "SECURITY", canaux: ["SMS", "EMAIL", "PUSH"], audience: "SPECIFIC_USERS", audienceDetail: "12 utilisateurs concernés", message: "Nous avons détecté une activité suspecte sur votre compte. Pour votre sécurité, veuillez vérifier vos dernières transactions et changer votre code secret.", priorite: "URGENT", statut: "DELIVERED", nbDestinataires: 12, nbDelivres: 12, nbEchoues: 0, dateEnvoi: "2025-06-07 11:15", envoyePar: "Super Admin" },
+  { id: "SN-005", titre: "Promo — 0% frais de transfert ce week-end", type: "PROMOTION", canaux: ["SMS", "PUSH"], audience: "ALL_USERS", audienceDetail: "23 847 utilisateurs actifs", message: "🎉 Ce week-end, envoyez de l'argent gratuitement ! 0% de frais sur tous les transferts du samedi 7h au dimanche 23h.", priorite: "NORMAL", statut: "DELIVERED", nbDestinataires: 23847, nbDelivres: 22015, nbEchoues: 1832, dateEnvoi: "2025-06-06 08:00", envoyePar: "Admin Reporting" },
+  { id: "SN-006", titre: "Rappel KYC — Complétez votre vérification", type: "KYC", canaux: ["SMS"], audience: "SPECIFIC_USERS", audienceDetail: "3 450 utilisateurs Tier 0", message: "Complétez votre vérification KYC pour bénéficier de plafonds plus élevés. Soumettez votre pièce d'identité directement dans l'app.", priorite: "NORMAL", statut: "PARTIAL", nbDestinataires: 3450, nbDelivres: 3201, nbEchoues: 249, dateEnvoi: "2025-06-05 16:00", envoyePar: "Admin Conformité" },
+  { id: "SN-007", titre: "Nouveau partenaire — Orange Money", type: "SYSTEM", canaux: ["EMAIL", "PUSH"], audience: "ALL_AGENTS", audienceDetail: "1 245 agents actifs", message: "Orange Money Mali est maintenant intégré ! Vous pouvez désormais effectuer des cash-in/cash-out Orange Money. Formation disponible dans l'espace agent.", priorite: "HIGH", statut: "DELIVERED", nbDestinataires: 1245, nbDelivres: 1230, nbEchoues: 15, dateEnvoi: "2025-06-04 10:30", envoyePar: "Admin Support" },
+  { id: "SN-008", titre: "Incident technique résolu", type: "MAINTENANCE", canaux: ["PUSH"], audience: "ALL", audienceDetail: "Tous les utilisateurs et agents", message: "L'incident technique sur les paiements par QR code est résolu. Tous les services sont de nouveau opérationnels. Merci pour votre patience.", priorite: "HIGH", statut: "DELIVERED", nbDestinataires: 25092, nbDelivres: 24800, nbEchoues: 292, dateEnvoi: "2025-06-03 18:45", envoyePar: "Super Admin" },
+  { id: "SN-009", titre: "Rapport hebdomadaire disponible", type: "SYSTEM", canaux: ["EMAIL"], audience: "ALL_AGENTS", audienceDetail: "1 245 agents actifs", message: "Votre rapport hebdomadaire est disponible : volume de transactions, commissions gagnées et performances. Consultez-le dans votre espace.", priorite: "NORMAL", statut: "PARTIAL", nbDestinataires: 1245, nbDelivres: 1198, nbEchoues: 47, dateEnvoi: "2025-06-02 07:00", envoyePar: "Admin Reporting" },
+  { id: "SN-010", titre: "Alerte Fraude — Suspicion de compte compromis", type: "SECURITY", canaux: ["SMS", "EMAIL", "PUSH"], audience: "SPECIFIC_USERS", audienceDetail: "5 utilisateurs signalés", message: "Alerte de sécurité : des transactions inhabituelles ont été détectées sur votre compte. Votre accès a été temporairement restreint. Contactez le support au 80 00 00 00.", priorite: "URGENT", statut: "DELIVERED", nbDestinataires: 5, nbDelivres: 5, nbEchoues: 0, dateEnvoi: "2025-06-01 22:30", envoyePar: "Super Admin" },
+]
+
+export const notificationTemplates: NotificationTemplate[] = [
+  { id: "TPL-001", nom: "Maintenance planifiée", categorie: "MAINTENANCE", objet: "Maintenance planifiée — {{date}}", contenu: "Cher {{role}}, une maintenance est planifiée le {{date}} de {{heure_debut}} à {{heure_fin}} GMT. Les services seront temporairement indisponibles. Merci de votre compréhension.", canauxSuggere: ["SMS", "PUSH"], audienceSuggere: "ALL_USERS", variableSlots: ["date", "heure_debut", "heure_fin", "role"] },
+  { id: "TPL-002", nom: "Alerte de sécurité", categorie: "SECURITY", objet: "Alerte Sécurité — Action requise", contenu: "Nous avons détecté une activité suspecte sur votre compte. Pour votre sécurité, veuillez {{action}} immédiatement. Si vous n'êtes pas à l'origine de cette activité, contactez le support au {{telephone_support}}.", canauxSuggere: ["SMS", "EMAIL", "PUSH"], audienceSuggere: "SPECIFIC_USERS", variableSlots: ["action", "telephone_support"] },
+  { id: "TPL-003", nom: "Promotion frais réduits", categorie: "PROMOTION", objet: "Offre spéciale — {{reduction}} de frais !", contenu: "🎉 Offre spéciale ! Profitez de {{reduction}} sur les frais de {{type_operation}} du {{date_debut}} au {{date_fin}}. Ne manquez pas cette opportunité !", canauxSuggere: ["SMS", "PUSH"], audienceSuggere: "ALL_USERS", variableSlots: ["reduction", "type_operation", "date_debut", "date_fin"] },
+  { id: "TPL-004", nom: "Rappel vérification KYC", categorie: "KYC", objet: "Complétez votre vérification KYC", contenu: "Complétez votre vérification KYC pour bénéficier de plafonds plus élevés. Soumettez votre {{document_requis}} directement dans l'application. Passer au {{niveau_cible}} vous permet de {{avantage}}.", canauxSuggere: ["SMS", "EMAIL"], audienceSuggere: "SPECIFIC_USERS", variableSlots: ["document_requis", "niveau_cible", "avantage"] },
+  { id: "TPL-005", nom: "Rechargement Float agent", categorie: "SYSTEM", objet: "Rechargement Float — Action requise", contenu: "Votre float actuel de {{float_actuel}} XOF est inférieur au seuil minimum de {{float_min}} XOF. Veuillez procéder à un rechargement pour continuer à offrir le service dépôt/retrait.", canauxSuggere: ["SMS"], audienceSuggere: "ALL_AGENTS", variableSlots: ["float_actuel", "float_min"] },
+  { id: "TPL-006", nom: "Incident technique résolu", categorie: "MAINTENANCE", objet: "Incident technique résolu", contenu: "L'incident technique sur {{service_affecte}} est résolu. Tous les services sont de nouveau opérationnels. Nous nous excusons pour la gêne occasionnée et vous remercions pour votre patience.", canauxSuggere: ["PUSH", "EMAIL"], audienceSuggere: "ALL", variableSlots: ["service_affecte"] },
+  { id: "TPL-007", nom: "Nouveau partenaire intégré", categorie: "SYSTEM", objet: "Nouveau partenaire — {{nom_partenaire}}", contenu: "{{nom_partenaire}} est maintenant intégré ! Vous pouvez désormais {{action_disponible}}. Formation disponible dans votre espace.", canauxSuggere: ["EMAIL", "PUSH"], audienceSuggere: "ALL_AGENTS", variableSlots: ["nom_partenaire", "action_disponible"] },
+  { id: "TPL-008", nom: "Confirmation de transaction", categorie: "TRANSACTION", objet: "Confirmation — {{type_transaction}} de {{montant}} XOF", contenu: "Votre {{type_transaction}} de {{montant}} XOF a été {{statut_transaction}}. Référence : {{reference}}. Frais : {{frais}} XOF. Solde restant : {{solde}} XOF.", canauxSuggere: ["SMS"], audienceSuggere: "SPECIFIC_USERS", variableSlots: ["type_transaction", "montant", "statut_transaction", "reference", "frais", "solde"] },
 ]
 
 // ─── Configuration / Fees ────────────────────────────────────────────────────
