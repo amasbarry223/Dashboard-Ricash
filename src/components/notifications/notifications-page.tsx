@@ -4,9 +4,11 @@ import { useState, useMemo } from "react"
 import {
   Bell, Send, CheckCircle, XCircle, Clock, AlertTriangle,
   Smartphone, Mail, BellRing, Shield, FileCheck, Settings,
-  Users, UserCheck, UserX, Eye, ChevronLeft, ChevronRight,
-  Download, FilterX, Megaphone, FileText, Sparkles, AlertOctagon,
-  Info, Copy, Zap, Wrench, ArrowRight,
+  Users, UserCheck, Eye, ChevronLeft, ChevronRight,
+  FilterX, Megaphone, FileText, Sparkles, AlertOctagon,
+  Info, Zap, Wrench, ArrowRight, Plus, Search,
+  Radio, CalendarDays, MessageSquare, TrendingUp, BarChart3,
+  RefreshCw, Copy, Trash2, MoreHorizontal, ChevronDown,
 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -16,6 +18,7 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Switch } from "@/components/ui/switch"
 import { Separator } from "@/components/ui/separator"
+import { Progress } from "@/components/ui/progress"
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select"
@@ -24,6 +27,10 @@ import {
 } from "@/components/ui/table"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import {
   sentNotifications, notificationTemplates,
   type NotificationType, type NotificationChannel, type NotificationAudience, type NotificationPriority,
@@ -36,42 +43,44 @@ function formatNumber(n: number): string {
 }
 
 // ─── Config maps ──────────────────────────────────────────────────────────────
-const typeConfig: Record<NotificationType, { label: string; className: string; icon: React.ElementType }> = {
-  OTP: { label: "OTP", className: "bg-teal-50 text-teal-700 border-teal-200 dark:bg-teal-950 dark:text-teal-300 dark:border-teal-800", icon: Clock },
-  TRANSACTION: { label: "Transaction", className: "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800", icon: Send },
-  SECURITY: { label: "Sécurité", className: "bg-red-50 text-red-700 border-red-200 dark:bg-red-950 dark:text-red-300 dark:border-red-800", icon: Shield },
-  KYC: { label: "KYC", className: "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950 dark:text-amber-300 dark:border-amber-800", icon: FileCheck },
-  SYSTEM: { label: "Système", className: "bg-gray-100 text-gray-600 border-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700", icon: Settings },
-  PROMOTION: { label: "Promotion", className: "bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-950 dark:text-purple-300 dark:border-purple-800", icon: Sparkles },
-  MAINTENANCE: { label: "Maintenance", className: "bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-950 dark:text-orange-300 dark:border-orange-800", icon: Wrench },
+const typeConfig: Record<NotificationType, { label: string; className: string; icon: React.ElementType; bgClass: string }> = {
+  OTP: { label: "OTP", className: "bg-teal-50 text-teal-700 border-teal-200 dark:bg-teal-950 dark:text-teal-300 dark:border-teal-800", icon: Clock, bgClass: "bg-teal-100 dark:bg-teal-950" },
+  TRANSACTION: { label: "Transaction", className: "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800", icon: Send, bgClass: "bg-emerald-100 dark:bg-emerald-950" },
+  SECURITY: { label: "Sécurité", className: "bg-red-50 text-red-700 border-red-200 dark:bg-red-950 dark:text-red-300 dark:border-red-800", icon: Shield, bgClass: "bg-red-100 dark:bg-red-950" },
+  KYC: { label: "KYC", className: "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950 dark:text-amber-300 dark:border-amber-800", icon: FileCheck, bgClass: "bg-amber-100 dark:bg-amber-950" },
+  SYSTEM: { label: "Système", className: "bg-gray-100 text-gray-600 border-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700", icon: Settings, bgClass: "bg-gray-100 dark:bg-gray-800" },
+  PROMOTION: { label: "Promotion", className: "bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-950 dark:text-purple-300 dark:border-purple-800", icon: Sparkles, bgClass: "bg-purple-100 dark:bg-purple-950" },
+  MAINTENANCE: { label: "Maintenance", className: "bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-950 dark:text-orange-300 dark:border-orange-800", icon: Wrench, bgClass: "bg-orange-100 dark:bg-orange-950" },
 }
 
-const channelConfig: Record<NotificationChannel, { label: string; icon: React.ElementType; bgClass: string; iconClass: string }> = {
-  SMS: { label: "SMS", icon: Smartphone, bgClass: "bg-teal-100 dark:bg-teal-950", iconClass: "text-teal-600 dark:text-teal-400" },
-  EMAIL: { label: "Email", icon: Mail, bgClass: "bg-amber-100 dark:bg-amber-950", iconClass: "text-amber-600 dark:text-amber-400" },
-  PUSH: { label: "Push", icon: BellRing, bgClass: "bg-purple-100 dark:bg-purple-950", iconClass: "text-purple-600 dark:text-purple-400" },
+const channelConfig: Record<NotificationChannel, { label: string; icon: React.ElementType; bgClass: string; iconClass: string; color: string }> = {
+  SMS: { label: "SMS", icon: Smartphone, bgClass: "bg-teal-100 dark:bg-teal-950", iconClass: "text-teal-600 dark:text-teal-400", color: "teal" },
+  EMAIL: { label: "Email", icon: Mail, bgClass: "bg-amber-100 dark:bg-amber-950", iconClass: "text-amber-600 dark:text-amber-400", color: "amber" },
+  PUSH: { label: "Push", icon: BellRing, bgClass: "bg-purple-100 dark:bg-purple-950", iconClass: "text-purple-600 dark:text-purple-400", color: "purple" },
 }
 
-const audienceConfig: Record<NotificationAudience, { label: string; icon: React.ElementType; desc: string }> = {
-  ALL_USERS: { label: "Tous les utilisateurs", icon: Users, desc: "Envoi à tous les comptes utilisateurs actifs" },
-  ALL_AGENTS: { label: "Tous les agents", icon: UserCheck, desc: "Envoi à tous les agents opérationnels" },
-  ALL: { label: "Tout le monde", icon: Megaphone, desc: "Utilisateurs + Agents" },
-  SPECIFIC_USERS: { label: "Utilisateurs spécifiques", icon: Users, desc: "Sélectionner des utilisateurs individuels" },
-  SPECIFIC_AGENTS: { label: "Agents spécifiques", icon: UserCheck, desc: "Sélectionner des agents individuels" },
+const audienceConfig: Record<NotificationAudience, { label: string; shortLabel: string; icon: React.ElementType; desc: string; count: string }> = {
+  ALL_USERS: { label: "Tous les utilisateurs", shortLabel: "Utilisateurs", icon: Users, desc: "23 847 comptes utilisateurs actifs", count: "23 847" },
+  ALL_AGENTS: { label: "Tous les agents", shortLabel: "Agents", icon: UserCheck, desc: "1 245 agents opérationnels", count: "1 245" },
+  ALL: { label: "Tout le monde", shortLabel: "Tous", icon: Megaphone, desc: "Utilisateurs + Agents (25 092)", count: "25 092" },
+  SPECIFIC_USERS: { label: "Utilisateurs spécifiques", shortLabel: "Sélection", icon: Users, desc: "Sélectionner des utilisateurs individuels", count: "—" },
+  SPECIFIC_AGENTS: { label: "Agents spécifiques", shortLabel: "Sélection", icon: UserCheck, desc: "Sélectionner des agents individuels", count: "—" },
 }
 
-const priorityConfig: Record<NotificationPriority, { label: string; className: string; icon: React.ElementType }> = {
-  NORMAL: { label: "Normale", className: "bg-gray-100 text-gray-600 border-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700", icon: Info },
-  HIGH: { label: "Haute", className: "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950 dark:text-amber-300 dark:border-amber-800", icon: AlertTriangle },
-  URGENT: { label: "Urgente", className: "bg-red-50 text-red-700 border-red-200 dark:bg-red-950 dark:text-red-300 dark:border-red-800", icon: AlertOctagon },
+const priorityConfig: Record<NotificationPriority, { label: string; className: string; icon: React.ElementType; dotClass: string }> = {
+  NORMAL: { label: "Normale", className: "bg-gray-100 text-gray-600 border-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700", icon: Info, dotClass: "bg-gray-400" },
+  HIGH: { label: "Haute", className: "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950 dark:text-amber-300 dark:border-amber-800", icon: AlertTriangle, dotClass: "bg-amber-500" },
+  URGENT: { label: "Urgente", className: "bg-red-50 text-red-700 border-red-200 dark:bg-red-950 dark:text-red-300 dark:border-red-800", icon: AlertOctagon, dotClass: "bg-red-500" },
 }
 
-const sentStatusConfig: Record<SentNotification["statut"], { label: string; className: string; icon: React.ElementType }> = {
-  DELIVERED: { label: "Délivré", className: "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800", icon: CheckCircle },
-  SENT: { label: "Envoyé", className: "bg-sky-50 text-sky-700 border-sky-200 dark:bg-sky-950 dark:text-sky-300 dark:border-sky-800", icon: Send },
-  PARTIAL: { label: "Partiel", className: "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950 dark:text-amber-300 dark:border-amber-800", icon: AlertTriangle },
-  FAILED: { label: "Échoué", className: "bg-red-50 text-red-700 border-red-200 dark:bg-red-950 dark:text-red-300 dark:border-red-800", icon: XCircle },
+const sentStatusConfig: Record<SentNotification["statut"], { label: string; className: string; icon: React.ElementType; progressClass: string }> = {
+  DELIVERED: { label: "Délivré", className: "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800", icon: CheckCircle, progressClass: "bg-emerald-500" },
+  SENT: { label: "Envoyé", className: "bg-sky-50 text-sky-700 border-sky-200 dark:bg-sky-950 dark:text-sky-300 dark:border-sky-800", icon: Send, progressClass: "bg-sky-500" },
+  PARTIAL: { label: "Partiel", className: "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950 dark:text-amber-300 dark:border-amber-800", icon: AlertTriangle, progressClass: "bg-amber-500" },
+  FAILED: { label: "Échoué", className: "bg-red-50 text-red-700 border-red-200 dark:bg-red-950 dark:text-red-300 dark:border-red-800", icon: XCircle, progressClass: "bg-red-500" },
 }
+
+// ─── Sub-components ───────────────────────────────────────────────────────────
 
 function TypeBadge({ type }: { type: NotificationType }) {
   const c = typeConfig[type]
@@ -103,8 +112,25 @@ function SentStatusBadge({ statut }: { statut: SentNotification["statut"] }) {
   )
 }
 
-// ─── Pagination Sub-component ─────────────────────────────────────────────────
-const PER_PAGE = 6
+function ChannelIcon({ channel, size = "sm" }: { channel: NotificationChannel; size?: "sm" | "md" }) {
+  const cfg = channelConfig[channel]
+  const Icon = cfg.icon
+  const sizeClass = size === "sm" ? "size-6" : "size-8"
+  const iconSize = size === "sm" ? "size-3" : "size-4"
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <div className={`flex ${sizeClass} items-center justify-center rounded-md ${cfg.bgClass}`}>
+          <Icon className={`${iconSize} ${cfg.iconClass}`} />
+        </div>
+      </TooltipTrigger>
+      <TooltipContent>{cfg.label}</TooltipContent>
+    </Tooltip>
+  )
+}
+
+// ─── Pagination ───────────────────────────────────────────────────────────────
+const PER_PAGE = 8
 
 function PaginationControls({ currentPage, totalPages, onPageChange, totalItems, startIndex, endIndex, itemLabel }: {
   currentPage: number; totalPages: number; onPageChange: (p: number) => void; totalItems: number; startIndex: number; endIndex: number; itemLabel: string
@@ -147,10 +173,34 @@ function PaginationControls({ currentPage, totalPages, onPageChange, totalItems,
   )
 }
 
+// ─── Stat Card ────────────────────────────────────────────────────────────────
+function StatCard({ icon: Icon, iconClass, bgClass, label, value, subValue, subClass }: {
+  icon: React.ElementType; iconClass: string; bgClass: string; label: string; value: string; subValue?: string; subClass?: string
+}) {
+  return (
+    <Card className="relative overflow-hidden">
+      <CardContent className="p-4">
+        <div className="flex items-start gap-3">
+          <div className={`flex size-10 items-center justify-center rounded-xl shrink-0 ${bgClass}`}>
+            <Icon className={`size-5 ${iconClass}`} />
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-xs text-muted-foreground mb-0.5">{label}</p>
+            <p className="text-xl font-bold tracking-tight">{value}</p>
+            {subValue && (
+              <p className={`text-xs font-medium mt-0.5 ${subClass || "text-muted-foreground"}`}>{subValue}</p>
+            )}
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export function NotificationsPage() {
-  // Creation form state
+  // ── Creation form state ──
   const [formType, setFormType] = useState<NotificationType>("SYSTEM")
   const [formAudience, setFormAudience] = useState<NotificationAudience>("ALL_USERS")
   const [formChannels, setFormChannels] = useState<NotificationChannel[]>(["SMS"])
@@ -160,20 +210,21 @@ export function NotificationsPage() {
   const [formScheduleNow, setFormScheduleNow] = useState(true)
   const [selectedTemplate, setSelectedTemplate] = useState<string>("")
 
-  // History pagination & filters
+  // ── History state ──
   const [histPage, setHistPage] = useState(1)
   const [histTypeFilter, setHistTypeFilter] = useState<string>("all")
   const [histAudienceFilter, setHistAudienceFilter] = useState<string>("all")
+  const [histStatusFilter, setHistStatusFilter] = useState<string>("all")
+  const [searchFilter, setSearchFilter] = useState("")
 
-  // Preview dialog
-  const [previewNotif, setPreviewNotif] = useState<SentNotification | null>(null)
+  // ── Detail view ──
+  const [selectedNotif, setSelectedNotif] = useState<SentNotification | null>(null)
 
-  // Toggle channel checkbox
+  // ── Form actions ──
   const toggleChannel = (ch: NotificationChannel) => {
     setFormChannels((prev) => prev.includes(ch) ? prev.filter((c) => c !== ch) : [...prev, ch])
   }
 
-  // Apply template
   const applyTemplate = (tplId: string) => {
     const tpl = notificationTemplates.find((t) => t.id === tplId)
     if (tpl) {
@@ -186,93 +237,131 @@ export function NotificationsPage() {
     }
   }
 
-  // Filtered history
+  const resetForm = () => {
+    setFormType("SYSTEM")
+    setFormAudience("ALL_USERS")
+    setFormChannels(["SMS"])
+    setFormPriority("NORMAL")
+    setFormTitle("")
+    setFormMessage("")
+    setFormScheduleNow(true)
+    setSelectedTemplate("")
+  }
+
+  // ── Filtered history ──
   const filteredHistory = useMemo(() => {
     return sentNotifications.filter((sn) => {
       if (histTypeFilter !== "all" && sn.type !== histTypeFilter) return false
       if (histAudienceFilter !== "all" && sn.audience !== histAudienceFilter) return false
+      if (histStatusFilter !== "all" && sn.statut !== histStatusFilter) return false
+      if (searchFilter) {
+        const q = searchFilter.toLowerCase()
+        return sn.titre.toLowerCase().includes(q) || sn.message.toLowerCase().includes(q) || sn.envoyePar.toLowerCase().includes(q)
+      }
       return true
     })
-  }, [histTypeFilter, histAudienceFilter])
+  }, [histTypeFilter, histAudienceFilter, histStatusFilter, searchFilter])
 
   const histTotalPages = Math.max(1, Math.ceil(filteredHistory.length / PER_PAGE))
   const safeHistPage = Math.min(histPage, histTotalPages)
   const paginatedHistory = filteredHistory.slice((safeHistPage - 1) * PER_PAGE, safeHistPage * PER_PAGE)
 
-  // Stats
+  // ── Stats ──
   const totalSent = sentNotifications.length
   const totalRecipients = sentNotifications.reduce((s, n) => s + n.nbDestinataires, 0)
   const totalDelivered = sentNotifications.reduce((s, n) => s + n.nbDelivres, 0)
+  const totalFailed = sentNotifications.reduce((s, n) => s + n.nbEchoues, 0)
   const deliveryRate = totalRecipients > 0 ? ((totalDelivered / totalRecipients) * 100).toFixed(1) : "0.0"
+  const urgentCount = sentNotifications.filter(n => n.priorite === "URGENT").length
+  const failedCount = sentNotifications.filter(n => n.statut === "FAILED").length
+
+  const hasActiveFilters = histTypeFilter !== "all" || histAudienceFilter !== "all" || histStatusFilter !== "all" || searchFilter !== ""
 
   return (
     <div className="space-y-6">
       {/* ── Header ─────────────────────────────────────────────────────────── */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Centre de Notifications</h1>
-          <p className="text-muted-foreground mt-1">Créez et envoyez des notifications aux utilisateurs et agents de la plateforme RICASH</p>
+          <div className="flex items-center gap-3">
+            <div className="flex size-10 items-center justify-center rounded-xl bg-emerald-100 dark:bg-emerald-950">
+              <Bell className="size-5 text-emerald-600 dark:text-emerald-400" />
+            </div>
+            <div>
+              <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Centre de Notifications</h1>
+              <p className="text-muted-foreground text-sm">Créez et diffusez des notifications aux utilisateurs et agents RICASH</p>
+            </div>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" className="gap-2 text-xs">
+            <BarChart3 className="size-3.5" />
+            Statistiques
+          </Button>
+          <Button size="sm" className="gap-2 text-xs bg-emerald-600 hover:bg-emerald-700 text-white">
+            <Plus className="size-3.5" />
+            Nouvelle campagne
+          </Button>
         </div>
       </div>
 
       {/* ── Stats ──────────────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="p-4 flex items-center gap-3">
-            <div className="flex size-10 items-center justify-center rounded-xl bg-emerald-100 dark:bg-emerald-950 shrink-0">
-              <Send className="size-5 text-emerald-600 dark:text-emerald-400" />
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground">Campagnes envoyées</p>
-              <p className="text-xl font-bold">{totalSent}</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4 flex items-center gap-3">
-            <div className="flex size-10 items-center justify-center rounded-xl bg-primary/10 shrink-0">
-              <Users className="size-5 text-primary" />
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground">Total destinataires</p>
-              <p className="text-xl font-bold">{formatNumber(totalRecipients)}</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4 flex items-center gap-3">
-            <div className="flex size-10 items-center justify-center rounded-xl bg-teal-100 dark:bg-teal-950 shrink-0">
-              <CheckCircle className="size-5 text-teal-600 dark:text-teal-400" />
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground">Taux de délivrance</p>
-              <p className="text-xl font-bold">{deliveryRate}%</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4 flex items-center gap-3">
-            <div className="flex size-10 items-center justify-center rounded-xl bg-purple-100 dark:bg-purple-950 shrink-0">
-              <FileText className="size-5 text-purple-600 dark:text-purple-400" />
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground">Modèles disponibles</p>
-              <p className="text-xl font-bold">{notificationTemplates.length}</p>
-            </div>
-          </CardContent>
-        </Card>
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
+        <StatCard
+          icon={Send}
+          iconClass="text-emerald-600 dark:text-emerald-400"
+          bgClass="bg-emerald-100 dark:bg-emerald-950"
+          label="Campagnes envoyées"
+          value={totalSent.toString()}
+          subValue="Ce mois"
+        />
+        <StatCard
+          icon={Users}
+          iconClass="text-primary"
+          bgClass="bg-primary/10"
+          label="Total destinataires"
+          value={formatNumber(totalRecipients)}
+          subValue={`${formatNumber(totalDelivered)} délivrés`}
+          subClass="text-emerald-600 dark:text-emerald-400"
+        />
+        <StatCard
+          icon={CheckCircle}
+          iconClass="text-teal-600 dark:text-teal-400"
+          bgClass="bg-teal-100 dark:bg-teal-950"
+          label="Taux de délivrance"
+          value={`${deliveryRate}%`}
+          subValue={`${formatNumber(totalFailed)} échoués`}
+          subClass="text-red-600 dark:text-red-400"
+        />
+        <StatCard
+          icon={AlertOctagon}
+          iconClass="text-red-600 dark:text-red-400"
+          bgClass="bg-red-100 dark:bg-red-950"
+          label="Campagnes urgentes"
+          value={urgentCount.toString()}
+          subValue={`${failedCount} échouées`}
+          subClass="text-red-600 dark:text-red-400"
+        />
+        <StatCard
+          icon={FileText}
+          iconClass="text-purple-600 dark:text-purple-400"
+          bgClass="bg-purple-100 dark:bg-purple-950"
+          label="Modèles disponibles"
+          value={notificationTemplates.length.toString()}
+          subValue="Prêts à l'emploi"
+        />
       </div>
 
       {/* ── Tabs ───────────────────────────────────────────────────────────── */}
       <Tabs defaultValue="create" className="space-y-4">
-        <TabsList className="w-full sm:w-auto grid grid-cols-3 sm:inline-flex">
+        <TabsList className="w-full sm:w-auto grid grid-cols-3 sm:inline-flex h-10">
           <TabsTrigger value="create" className="gap-1.5 text-xs sm:text-sm">
             <Send className="size-3.5 hidden sm:block" />
-            Créer
+            Créer une notification
           </TabsTrigger>
           <TabsTrigger value="history" className="gap-1.5 text-xs sm:text-sm">
             <Clock className="size-3.5 hidden sm:block" />
             Historique
+            <Badge variant="secondary" className="ml-1 text-[10px] px-1.5 py-0">{totalSent}</Badge>
           </TabsTrigger>
           <TabsTrigger value="templates" className="gap-1.5 text-xs sm:text-sm">
             <FileText className="size-3.5 hidden sm:block" />
@@ -280,38 +369,66 @@ export function NotificationsPage() {
           </TabsTrigger>
         </TabsList>
 
-        {/* ── Tab: Créer ────────────────────────────────────────────────────── */}
+        {/* ═══════════════════════════════════════════════════════════════════
+            TAB: CRÉER UNE NOTIFICATION
+        ═══════════════════════════════════════════════════════════════════ */}
         <TabsContent value="create" className="space-y-4">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-            {/* Form */}
-            <div className="lg:col-span-2 space-y-4">
+          <div className="grid grid-cols-1 xl:grid-cols-5 gap-4">
+            {/* ── Form (3 cols) ── */}
+            <div className="xl:col-span-3 space-y-4">
               {/* Quick Template Selection */}
               <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-base flex items-center gap-2">
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-2 mb-3">
                     <Zap className="size-4 text-amber-500" />
-                    Démarrer depuis un modèle
-                  </CardTitle>
-                  <CardDescription>Choisissez un modèle pré-configuré pour accélérer la création</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Select value={selectedTemplate} onValueChange={applyTemplate}>
-                    <SelectTrigger><SelectValue placeholder="Sélectionner un modèle..." /></SelectTrigger>
-                    <SelectContent>
-                      {notificationTemplates.map((tpl) => (
-                        <SelectItem key={tpl.id} value={tpl.id}>
-                          {tpl.nom} — {typeConfig[tpl.categorie]?.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                    <Label className="text-sm font-semibold">Démarrer depuis un modèle</Label>
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                    {notificationTemplates.slice(0, 4).map((tpl) => {
+                      const tcfg = typeConfig[tpl.categorie]
+                      const TIcon = tcfg.icon
+                      const isActive = selectedTemplate === tpl.id
+                      return (
+                        <button
+                          key={tpl.id}
+                          type="button"
+                          onClick={() => applyTemplate(tpl.id)}
+                          className={`flex items-center gap-2 p-2.5 rounded-lg border-2 text-left transition-all text-xs ${
+                            isActive
+                              ? "border-emerald-400 bg-emerald-50 dark:bg-emerald-950/30 dark:border-emerald-700"
+                              : "border-muted bg-background hover:border-muted-foreground/30"
+                          }`}
+                        >
+                          <div className={`flex size-7 items-center justify-center rounded-md shrink-0 ${tcfg.bgClass}`}>
+                            <TIcon className={`size-3.5 ${isActive ? "text-emerald-600 dark:text-emerald-400" : ""}`} />
+                          </div>
+                          <span className="font-medium truncate">{tpl.nom}</span>
+                        </button>
+                      )
+                    })}
+                  </div>
+                  <div className="mt-2">
+                    <Select value={selectedTemplate} onValueChange={applyTemplate}>
+                      <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Plus de modèles..." /></SelectTrigger>
+                      <SelectContent>
+                        {notificationTemplates.map((tpl) => (
+                          <SelectItem key={tpl.id} value={tpl.id}>
+                            {tpl.nom} — {typeConfig[tpl.categorie]?.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </CardContent>
               </Card>
 
               {/* Main Form */}
               <Card>
                 <CardHeader className="pb-3">
-                  <CardTitle className="text-base">Composer la notification</CardTitle>
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <MessageSquare className="size-4 text-emerald-600" />
+                    Composer la notification
+                  </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-5">
                   {/* Row 1: Type + Audience */}
@@ -347,7 +464,10 @@ export function NotificationsPage() {
                           ))}
                         </SelectContent>
                       </Select>
-                      <p className="text-xs text-muted-foreground">{audienceConfig[formAudience]?.desc}</p>
+                      <p className="text-xs text-muted-foreground flex items-center gap-1">
+                        <Users className="size-3" />
+                        {audienceConfig[formAudience]?.desc}
+                      </p>
                     </div>
                   </div>
 
@@ -358,9 +478,9 @@ export function NotificationsPage() {
                       {Object.entries(channelConfig).map(([key, cfg]) => {
                         const isChecked = formChannels.includes(key as NotificationChannel)
                         return (
-                          <label key={key} className={`flex items-center gap-2.5 px-4 py-2.5 rounded-lg border-2 cursor-pointer transition-all ${
+                          <label key={key} className={`flex items-center gap-2.5 px-4 py-2.5 rounded-xl border-2 cursor-pointer transition-all ${
                             isChecked
-                              ? "border-emerald-400 bg-emerald-50 dark:bg-emerald-950/30 dark:border-emerald-700"
+                              ? "border-emerald-400 bg-emerald-50/50 dark:bg-emerald-950/20 dark:border-emerald-700"
                               : "border-muted bg-background hover:border-muted-foreground/30"
                           }`}>
                             <input
@@ -369,11 +489,16 @@ export function NotificationsPage() {
                               onChange={() => toggleChannel(key as NotificationChannel)}
                               className="sr-only"
                             />
-                            <div className={`flex size-7 items-center justify-center rounded-md ${cfg.bgClass}`}>
-                              <cfg.icon className={`size-3.5 ${cfg.iconClass}`} />
+                            <div className={`flex size-8 items-center justify-center rounded-lg ${cfg.bgClass}`}>
+                              <cfg.icon className={`size-4 ${cfg.iconClass}`} />
                             </div>
-                            <span className="text-sm font-medium">{cfg.label}</span>
-                            {isChecked && <CheckCircle className="size-4 text-emerald-600 dark:text-emerald-400" />}
+                            <div>
+                              <span className="text-sm font-medium block">{cfg.label}</span>
+                              <span className="text-[10px] text-muted-foreground">
+                                {key === "SMS" ? "160 car. max" : key === "EMAIL" ? "HTML supporté" : "Temps réel"}
+                              </span>
+                            </div>
+                            {isChecked && <CheckCircle className="size-4 text-emerald-600 dark:text-emerald-400 ml-auto" />}
                           </label>
                         )
                       })}
@@ -382,7 +507,7 @@ export function NotificationsPage() {
 
                   {/* Row 3: Priority */}
                   <div className="space-y-2">
-                    <Label className="text-sm font-medium">Priorité</Label>
+                    <Label className="text-sm font-medium">Niveau de priorité</Label>
                     <div className="flex flex-wrap gap-2">
                       {Object.entries(priorityConfig).map(([key, cfg]) => {
                         const isActive = formPriority === key
@@ -391,11 +516,11 @@ export function NotificationsPage() {
                             key={key}
                             type="button"
                             onClick={() => setFormPriority(key as NotificationPriority)}
-                            className={`inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-medium transition-all ${
+                            className={`inline-flex items-center gap-1.5 rounded-lg border px-3.5 py-2 text-xs font-medium transition-all ${
                               isActive ? cfg.className + " ring-2 ring-offset-1 ring-current" : "bg-background border-muted text-muted-foreground hover:text-foreground"
                             }`}
                           >
-                            <cfg.icon className="size-3" />
+                            <span className={`size-2 rounded-full ${cfg.dotClass}`} />
                             {cfg.label}
                           </button>
                         )
@@ -409,33 +534,39 @@ export function NotificationsPage() {
                   <div className="space-y-2">
                     <Label className="text-sm font-medium">Objet / Titre</Label>
                     <Input
-                      placeholder="Ex: Maintenance planifiée — 15 Juin"
+                      placeholder="Ex: Maintenance planifiée — 15 Juin 2025"
                       value={formTitle}
                       onChange={(e) => setFormTitle(e.target.value)}
+                      className="h-10"
                     />
                   </div>
 
                   {/* Row 5: Message */}
                   <div className="space-y-2">
-                    <Label className="text-sm font-medium">Message</Label>
+                    <div className="flex items-center justify-between">
+                      <Label className="text-sm font-medium">Message</Label>
+                      <span className="text-xs text-muted-foreground tabular-nums">
+                        {formMessage.length} car.
+                      </span>
+                    </div>
                     <Textarea
                       placeholder="Rédigez le contenu de votre notification..."
-                      className="min-h-[120px] resize-y"
+                      className="min-h-[140px] resize-y"
                       value={formMessage}
                       onChange={(e) => setFormMessage(e.target.value)}
                     />
-                    <p className="text-xs text-muted-foreground">
-                      {formMessage.length} caractère{formMessage.length !== 1 ? "s" : ""}
-                      {formChannels.includes("SMS") && formMessage.length > 160 && (
-                        <span className="text-amber-600 dark:text-amber-400 ml-2">⚠️ SMS limité à 160 caractères</span>
-                      )}
-                    </p>
+                    {formChannels.includes("SMS") && formMessage.length > 160 && (
+                      <p className="text-xs text-amber-600 dark:text-amber-400 flex items-center gap-1">
+                        <AlertTriangle className="size-3" />
+                        SMS limité à 160 caractères — {Math.ceil(formMessage.length / 160)} SMS nécessaires
+                      </p>
+                    )}
                   </div>
 
                   {/* Row 6: Schedule */}
-                  <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
-                    <div className="flex items-center gap-2">
-                      <Clock className="size-4 text-muted-foreground" />
+                  <div className="flex items-center justify-between p-3 rounded-xl bg-muted/50 border">
+                    <div className="flex items-center gap-3">
+                      <CalendarDays className="size-4 text-muted-foreground" />
                       <div>
                         <p className="text-sm font-medium">Envoyer maintenant</p>
                         <p className="text-xs text-muted-foreground">Désactivez pour planifier l&apos;envoi</p>
@@ -447,133 +578,280 @@ export function NotificationsPage() {
               </Card>
             </div>
 
-            {/* Preview Panel */}
-            <div className="space-y-4">
+            {/* ── Preview Panel (2 cols) ── */}
+            <div className="xl:col-span-2 space-y-4">
+              {/* Live Preview */}
               <Card className="sticky top-4">
                 <CardHeader className="pb-3">
                   <CardTitle className="text-base flex items-center gap-2">
                     <Eye className="size-4" />
-                    Aperçu
+                    Aperçu en direct
                   </CardTitle>
                   <CardDescription>Visualisation avant envoi</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  {/* Preview Type + Priority */}
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <TypeBadge type={formType} />
-                    <PriorityBadge priority={formPriority} />
-                  </div>
-
-                  {/* Preview Title */}
-                  <div>
-                    <p className="text-xs text-muted-foreground mb-1">Objet</p>
-                    <p className="text-sm font-semibold">{formTitle || "—"}</p>
-                  </div>
-
-                  {/* Preview Channels */}
-                  <div>
-                    <p className="text-xs text-muted-foreground mb-1">Canaux</p>
-                    <div className="flex gap-2">
-                      {formChannels.length === 0 ? (
-                        <span className="text-xs text-muted-foreground italic">Aucun canal sélectionné</span>
-                      ) : (
-                        formChannels.map((ch) => {
-                          const cfg = channelConfig[ch]
-                          return (
-                            <div key={ch} className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium ${cfg.bgClass} ${cfg.iconClass}`}>
-                              <cfg.icon className="size-3" />
-                              {cfg.label}
-                            </div>
-                          )
-                        })
-                      )}
+                  {/* Phone mockup for SMS */}
+                  {formChannels.includes("SMS") && (
+                    <div className="mx-auto max-w-[280px] rounded-2xl border-2 border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 p-3 shadow-lg">
+                      <div className="flex items-center justify-between mb-2 px-1">
+                        <span className="text-[10px] text-muted-foreground">09:41</span>
+                        <div className="flex gap-1">
+                          <Smartphone className="size-3 text-muted-foreground" />
+                        </div>
+                      </div>
+                      <div className="rounded-xl bg-white dark:bg-gray-800 p-3 shadow-sm">
+                        <div className="flex items-center gap-2 mb-2">
+                          <div className="flex size-6 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-950">
+                            <div className="size-2 rounded-full bg-emerald-500" />
+                          </div>
+                          <span className="text-xs font-semibold">RICASH</span>
+                        </div>
+                        <p className="text-xs font-medium mb-1">{formTitle || "Objet de la notification"}</p>
+                        <p className="text-[11px] text-muted-foreground leading-relaxed">{formMessage || "Votre message apparaîtra ici..."}</p>
+                      </div>
                     </div>
-                  </div>
-
-                  {/* Preview Audience */}
-                  <div>
-                    <p className="text-xs text-muted-foreground mb-1">Audience</p>
-                    <div className="flex items-center gap-2">
-                      {(() => {
-                        const acfg = audienceConfig[formAudience]
-                        const AIcon = acfg.icon
-                        return (
-                          <>
-                            <div className="flex size-7 items-center justify-center rounded-md bg-primary/10">
-                              <AIcon className="size-3.5 text-primary" />
-                            </div>
-                            <span className="text-sm font-medium">{acfg.label}</span>
-                          </>
-                        )
-                      })()}
-                    </div>
-                  </div>
-
-                  <Separator />
-
-                  {/* Preview Message */}
-                  <div>
-                    <p className="text-xs text-muted-foreground mb-1">Message</p>
-                    <div className="rounded-lg bg-muted/50 border p-3">
-                      <p className="text-sm leading-relaxed whitespace-pre-wrap">{formMessage || "Aucun message saisi"}</p>
-                    </div>
-                  </div>
-
-                  <Separator />
-
-                  {/* Send button */}
-                  <Button
-                    className="w-full gap-2 bg-emerald-600 hover:bg-emerald-700 text-white"
-                    disabled={!formTitle || !formMessage || formChannels.length === 0}
-                  >
-                    <Send className="size-4" />
-                    {formScheduleNow ? "Envoyer maintenant" : "Planifier l'envoi"}
-                  </Button>
-                  {(!formTitle || !formMessage || formChannels.length === 0) && (
-                    <p className="text-xs text-center text-muted-foreground">
-                      Complétez l&apos;objet, le message et sélectionnez au moins un canal
-                    </p>
                   )}
+
+                  {/* Email mockup */}
+                  {formChannels.includes("EMAIL") && (
+                    <div className="rounded-xl border bg-white dark:bg-gray-900 overflow-hidden shadow-sm">
+                      <div className="bg-gray-50 dark:bg-gray-800 px-3 py-2 border-b flex items-center gap-2">
+                        <Mail className="size-3.5 text-muted-foreground" />
+                        <div>
+                          <p className="text-[10px] text-muted-foreground">De : notifications@ricash.com</p>
+                          <p className="text-xs font-medium">{formTitle || "Objet de l'email"}</p>
+                        </div>
+                      </div>
+                      <div className="p-3">
+                        <p className="text-xs leading-relaxed text-muted-foreground">{formMessage || "Contenu de l'email..."}</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Push mockup */}
+                  {formChannels.includes("PUSH") && (
+                    <div className="rounded-xl border bg-white dark:bg-gray-900 overflow-hidden shadow-sm max-w-[320px] mx-auto">
+                      <div className="flex items-start gap-2 p-3">
+                        <div className="flex size-8 items-center justify-center rounded-lg bg-emerald-100 dark:bg-emerald-950 shrink-0">
+                          <Bell className="size-4 text-emerald-600 dark:text-emerald-400" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-xs font-semibold">RICASH</p>
+                          <p className="text-[11px] font-medium truncate">{formTitle || "Titre push"}</p>
+                          <p className="text-[10px] text-muted-foreground line-clamp-2">{formMessage || "Message push..."}</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  <Separator />
+
+                  {/* Metadata */}
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <TypeBadge type={formType} />
+                      <PriorityBadge priority={formPriority} />
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <p className="text-xs text-muted-foreground w-16 shrink-0">Canaux</p>
+                      <div className="flex gap-1.5">
+                        {formChannels.length === 0 ? (
+                          <span className="text-xs text-muted-foreground italic">Aucun</span>
+                        ) : (
+                          formChannels.map((ch) => <ChannelIcon key={ch} channel={ch} size="md" />)
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <p className="text-xs text-muted-foreground w-16 shrink-0">Audience</p>
+                      <div className="flex items-center gap-1.5">
+                        {(() => {
+                          const acfg = audienceConfig[formAudience]
+                          const AIcon = acfg.icon
+                          return (
+                            <>
+                              <div className="flex size-6 items-center justify-center rounded-md bg-primary/10">
+                                <AIcon className="size-3 text-primary" />
+                              </div>
+                              <span className="text-xs font-medium">{acfg.label}</span>
+                              {acfg.count !== "—" && (
+                                <Badge variant="secondary" className="text-[10px] px-1.5">{acfg.count}</Badge>
+                              )}
+                            </>
+                          )
+                        })()}
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <p className="text-xs text-muted-foreground w-16 shrink-0">Envoi</p>
+                      <span className="text-xs font-medium flex items-center gap-1">
+                        {formScheduleNow ? (
+                          <><Radio className="size-3 text-emerald-600" /> Immédiat</>
+                        ) : (
+                          <><CalendarDays className="size-3 text-amber-600" /> Planifié</>
+                        )}
+                      </span>
+                    </div>
+                  </div>
+
+                  <Separator />
+
+                  {/* Action buttons */}
+                  <div className="space-y-2">
+                    <Button
+                      className="w-full gap-2 bg-emerald-600 hover:bg-emerald-700 text-white h-10"
+                      disabled={!formTitle || !formMessage || formChannels.length === 0}
+                    >
+                      <Send className="size-4" />
+                      {formScheduleNow ? "Envoyer maintenant" : "Planifier l'envoi"}
+                    </Button>
+                    {(!formTitle || !formMessage || formChannels.length === 0) && (
+                      <p className="text-xs text-center text-muted-foreground">
+                        Complétez l&apos;objet, le message et sélectionnez au moins un canal
+                      </p>
+                    )}
+                    <div className="flex gap-2">
+                      <Button variant="outline" className="flex-1 gap-1.5 text-xs h-8" onClick={resetForm}>
+                        <RefreshCw className="size-3" />
+                        Réinitialiser
+                      </Button>
+                      <Button variant="outline" className="flex-1 gap-1.5 text-xs h-8">
+                        <Copy className="size-3" />
+                        Brouillon
+                      </Button>
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
             </div>
           </div>
         </TabsContent>
 
-        {/* ── Tab: Historique ───────────────────────────────────────────────── */}
+        {/* ═══════════════════════════════════════════════════════════════════
+            TAB: HISTORIQUE
+        ═══════════════════════════════════════════════════════════════════ */}
         <TabsContent value="history" className="space-y-4">
+          {/* Detail panel - when a notification is selected */}
+          {selectedNotif && (
+            <Card className="border-emerald-200 dark:border-emerald-800 overflow-hidden">
+              <div className="bg-emerald-50 dark:bg-emerald-950/30 p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    {(() => {
+                      const tcfg = typeConfig[selectedNotif.type]
+                      const TIcon = tcfg.icon
+                      return (
+                        <div className={`flex size-8 items-center justify-center rounded-lg ${tcfg.bgClass}`}>
+                          <TIcon className="size-4" />
+                        </div>
+                      )
+                    })()}
+                    <div>
+                      <h3 className="font-semibold text-sm">{selectedNotif.titre}</h3>
+                      <p className="text-xs text-muted-foreground">Envoyé le {selectedNotif.dateEnvoi} par {selectedNotif.envoyePar}</p>
+                    </div>
+                  </div>
+                  <Button variant="ghost" size="sm" onClick={() => setSelectedNotif(null)} className="text-xs">Fermer</Button>
+                </div>
+              </div>
+              <CardContent className="p-4 space-y-4">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  <div className="p-3 rounded-xl bg-muted/50 border">
+                    <p className="text-xs text-muted-foreground mb-0.5">Destinataires</p>
+                    <p className="text-lg font-bold tabular-nums">{formatNumber(selectedNotif.nbDestinataires)}</p>
+                  </div>
+                  <div className="p-3 rounded-xl bg-muted/50 border">
+                    <p className="text-xs text-muted-foreground mb-0.5">Délivrés</p>
+                    <p className="text-lg font-bold tabular-nums text-emerald-700 dark:text-emerald-400">{formatNumber(selectedNotif.nbDelivres)}</p>
+                  </div>
+                  <div className="p-3 rounded-xl bg-muted/50 border">
+                    <p className="text-xs text-muted-foreground mb-0.5">Échoués</p>
+                    <p className="text-lg font-bold tabular-nums text-red-700 dark:text-red-400">{formatNumber(selectedNotif.nbEchoues)}</p>
+                  </div>
+                  <div className="p-3 rounded-xl bg-muted/50 border">
+                    <p className="text-xs text-muted-foreground mb-0.5">Taux délivrance</p>
+                    <p className="text-lg font-bold tabular-nums">{((selectedNotif.nbDelivres / selectedNotif.nbDestinataires) * 100).toFixed(1)}%</p>
+                  </div>
+                </div>
+                {/* Progress bar */}
+                <div>
+                  <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+                    <span>Délivrance</span>
+                    <span>{((selectedNotif.nbDelivres / selectedNotif.nbDestinataires) * 100).toFixed(1)}%</span>
+                  </div>
+                  <Progress value={(selectedNotif.nbDelivres / selectedNotif.nbDestinataires) * 100} className="h-2" />
+                </div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <TypeBadge type={selectedNotif.type} />
+                  <PriorityBadge priority={selectedNotif.priorite} />
+                  <SentStatusBadge statut={selectedNotif.statut} />
+                  {selectedNotif.canaux.map((ch) => <ChannelIcon key={ch} channel={ch} size="md" />)}
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">Audience</p>
+                  <p className="text-sm font-medium">{selectedNotif.audienceDetail}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">Message</p>
+                  <div className="rounded-xl bg-muted/50 border p-3">
+                    <p className="text-sm leading-relaxed">{selectedNotif.message}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           {/* Filters */}
           <Card>
             <CardContent className="p-4">
               <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
-                <div className="flex-1">
-                  <Select value={histTypeFilter} onValueChange={(v) => { setHistTypeFilter(v); setHistPage(1) }}>
-                    <SelectTrigger className="w-full sm:w-[180px]"><SelectValue placeholder="Type" /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Tous les types</SelectItem>
-                      {Object.entries(typeConfig).map(([key, cfg]) => (
-                        <SelectItem key={key} value={key}>{cfg.label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                <div className="relative flex-1 w-full sm:max-w-[200px]">
+                  <Search className="text-muted-foreground absolute left-2.5 top-2.5 size-3.5" />
+                  <Input
+                    placeholder="Rechercher..."
+                    className="h-8 pl-8 text-xs"
+                    value={searchFilter}
+                    onChange={(e) => { setSearchFilter(e.target.value); setHistPage(1) }}
+                  />
                 </div>
-                <Select value={histAudienceFilter} onValueChange={(v) => { setHistAudienceFilter(v); setHistPage(1) }}>
-                  <SelectTrigger className="w-full sm:w-[200px]"><SelectValue placeholder="Audience" /></SelectTrigger>
+                <Select value={histTypeFilter} onValueChange={(v) => { setHistTypeFilter(v); setHistPage(1) }}>
+                  <SelectTrigger className="h-8 text-xs w-full sm:w-[150px]"><SelectValue placeholder="Type" /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">Toutes les audiences</SelectItem>
-                    {Object.entries(audienceConfig).map(([key, cfg]) => (
+                    <SelectItem value="all">Tous les types</SelectItem>
+                    {Object.entries(typeConfig).map(([key, cfg]) => (
                       <SelectItem key={key} value={key}>{cfg.label}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
-                {(histTypeFilter !== "all" || histAudienceFilter !== "all") && (
+                <Select value={histAudienceFilter} onValueChange={(v) => { setHistAudienceFilter(v); setHistPage(1) }}>
+                  <SelectTrigger className="h-8 text-xs w-full sm:w-[170px]"><SelectValue placeholder="Audience" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Toutes audiences</SelectItem>
+                    {Object.entries(audienceConfig).map(([key, cfg]) => (
+                      <SelectItem key={key} value={key}>{cfg.shortLabel}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Select value={histStatusFilter} onValueChange={(v) => { setHistStatusFilter(v); setHistPage(1) }}>
+                  <SelectTrigger className="h-8 text-xs w-full sm:w-[140px]"><SelectValue placeholder="Statut" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Tous statuts</SelectItem>
+                    {Object.entries(sentStatusConfig).map(([key, cfg]) => (
+                      <SelectItem key={key} value={key}>{cfg.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {hasActiveFilters && (
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <Button variant="ghost" size="icon" className="text-muted-foreground" onClick={() => { setHistTypeFilter("all"); setHistAudienceFilter("all"); setHistPage(1) }}>
+                      <Button variant="ghost" size="icon" className="size-8 text-muted-foreground shrink-0" onClick={() => { setHistTypeFilter("all"); setHistAudienceFilter("all"); setHistStatusFilter("all"); setSearchFilter(""); setHistPage(1) }}>
                         <FilterX className="size-4" />
                       </Button>
                     </TooltipTrigger>
-                    <TooltipContent>Réinitialiser</TooltipContent>
+                    <TooltipContent>Réinitialiser les filtres</TooltipContent>
                   </Tooltip>
                 )}
               </div>
@@ -583,28 +861,33 @@ export function NotificationsPage() {
           {/* History Table */}
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-lg">Notifications envoyées</CardTitle>
-              <CardDescription>{filteredHistory.length} campagne{filteredHistory.length !== 1 ? "s" : ""} envoyée{filteredHistory.length !== 1 ? "s" : ""}</CardDescription>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-lg">Notifications envoyées</CardTitle>
+                  <CardDescription>{filteredHistory.length} campagne{filteredHistory.length !== 1 ? "s" : ""}</CardDescription>
+                </div>
+              </div>
             </CardHeader>
             <CardContent className="p-0">
               <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow className="bg-muted/50 hover:bg-muted/50">
-                      <TableHead>Titre</TableHead>
+                      <TableHead className="w-[250px]">Campagne</TableHead>
                       <TableHead>Type</TableHead>
                       <TableHead className="hidden md:table-cell">Canaux</TableHead>
                       <TableHead className="hidden sm:table-cell">Audience</TableHead>
                       <TableHead>Priorité</TableHead>
-                      <TableHead className="hidden lg:table-cell">Destinataires</TableHead>
+                      <TableHead className="hidden lg:table-cell">Délivrance</TableHead>
                       <TableHead>Statut</TableHead>
-                      <TableHead className="hidden lg:table-cell">Date</TableHead>
+                      <TableHead className="hidden xl:table-cell">Date</TableHead>
+                      <TableHead className="w-10"></TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {paginatedHistory.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={8} className="h-32 text-center">
+                        <TableCell colSpan={9} className="h-32 text-center">
                           <div className="flex flex-col items-center gap-2 text-muted-foreground">
                             <Bell className="size-8 opacity-40" />
                             <p className="text-sm">Aucune campagne trouvée</p>
@@ -612,43 +895,65 @@ export function NotificationsPage() {
                         </TableCell>
                       </TableRow>
                     ) : (
-                      paginatedHistory.map((sn) => (
-                        <TableRow key={sn.id} className="cursor-pointer hover:bg-muted/30 transition-colors" onClick={() => setPreviewNotif(sn)}>
-                          <TableCell>
-                            <div className="min-w-0">
-                              <p className="font-medium text-sm truncate max-w-[200px]">{sn.titre}</p>
-                              <p className="text-xs text-muted-foreground">par {sn.envoyePar}</p>
-                            </div>
-                          </TableCell>
-                          <TableCell><TypeBadge type={sn.type} /></TableCell>
-                          <TableCell className="hidden md:table-cell">
-                            <div className="flex gap-1">
-                              {sn.canaux.map((ch) => {
-                                const cfg = channelConfig[ch]
-                                return (
-                                  <div key={ch} className={`flex size-6 items-center justify-center rounded ${cfg.bgClass}`}>
-                                    <cfg.icon className={`size-3 ${cfg.iconClass}`} />
-                                  </div>
-                                )
-                              })}
-                            </div>
-                          </TableCell>
-                          <TableCell className="hidden sm:table-cell">
-                            <span className="text-xs font-medium">{audienceConfig[sn.audience]?.label}</span>
-                          </TableCell>
-                          <TableCell><PriorityBadge priority={sn.priorite} /></TableCell>
-                          <TableCell className="hidden lg:table-cell">
-                            <div className="text-sm">
-                              <span className="font-medium tabular-nums">{formatNumber(sn.nbDestinataires)}</span>
-                              <span className="text-xs text-muted-foreground ml-1">
-                                ({((sn.nbDelivres / sn.nbDestinataires) * 100).toFixed(0)}% délivrés)
-                              </span>
-                            </div>
-                          </TableCell>
-                          <TableCell><SentStatusBadge statut={sn.statut} /></TableCell>
-                          <TableCell className="hidden lg:table-cell text-sm text-muted-foreground">{sn.dateEnvoi}</TableCell>
-                        </TableRow>
-                      ))
+                      paginatedHistory.map((sn) => {
+                        const deliveryPct = (sn.nbDelivres / sn.nbDestinataires) * 100
+                        return (
+                          <TableRow
+                            key={sn.id}
+                            className={`cursor-pointer transition-colors ${selectedNotif?.id === sn.id ? "bg-emerald-50/50 dark:bg-emerald-950/20" : "hover:bg-muted/30"}`}
+                            onClick={() => setSelectedNotif(selectedNotif?.id === sn.id ? null : sn)}
+                          >
+                            <TableCell>
+                              <div className="min-w-0">
+                                <p className="font-medium text-sm truncate max-w-[220px]">{sn.titre}</p>
+                                <p className="text-xs text-muted-foreground">par {sn.envoyePar}</p>
+                              </div>
+                            </TableCell>
+                            <TableCell><TypeBadge type={sn.type} /></TableCell>
+                            <TableCell className="hidden md:table-cell">
+                              <div className="flex gap-1">
+                                {sn.canaux.map((ch) => <ChannelIcon key={ch} channel={ch} />)}
+                              </div>
+                            </TableCell>
+                            <TableCell className="hidden sm:table-cell">
+                              <span className="text-xs font-medium">{audienceConfig[sn.audience]?.shortLabel}</span>
+                            </TableCell>
+                            <TableCell><PriorityBadge priority={sn.priorite} /></TableCell>
+                            <TableCell className="hidden lg:table-cell">
+                              <div className="space-y-1 min-w-[100px]">
+                                <div className="flex items-center justify-between text-xs">
+                                  <span className="tabular-nums font-medium">{deliveryPct.toFixed(0)}%</span>
+                                  <span className="text-muted-foreground">{formatNumber(sn.nbDelivres)}/{formatNumber(sn.nbDestinataires)}</span>
+                                </div>
+                                <Progress value={deliveryPct} className="h-1.5" />
+                              </div>
+                            </TableCell>
+                            <TableCell><SentStatusBadge statut={sn.statut} /></TableCell>
+                            <TableCell className="hidden xl:table-cell text-xs text-muted-foreground">{sn.dateEnvoi}</TableCell>
+                            <TableCell>
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                                  <Button variant="ghost" size="icon" className="size-7">
+                                    <MoreHorizontal className="size-3.5" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setSelectedNotif(sn) }}>
+                                    <Eye className="mr-2 size-3.5" /> Voir détails
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem onClick={(e) => e.stopPropagation()}>
+                                    <Copy className="mr-2 size-3.5" /> Dupliquer
+                                  </DropdownMenuItem>
+                                  <DropdownMenuSeparator />
+                                  <DropdownMenuItem className="text-destructive" onClick={(e) => e.stopPropagation()}>
+                                    <Trash2 className="mr-2 size-3.5" /> Supprimer
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </TableCell>
+                          </TableRow>
+                        )
+                      })
                     )}
                   </TableBody>
                 </Table>
@@ -666,79 +971,22 @@ export function NotificationsPage() {
               )}
             </CardContent>
           </Card>
-
-          {/* Preview panel for selected history item */}
-          {previewNotif && (
-            <Card className="border-emerald-200 bg-emerald-50/30 dark:border-emerald-800 dark:bg-emerald-950/20">
-              <CardHeader className="pb-3">
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <Eye className="size-4 text-emerald-600" />
-                    {previewNotif.titre}
-                  </CardTitle>
-                  <Button variant="ghost" size="sm" onClick={() => setPreviewNotif(null)}>Fermer</Button>
-                </div>
-                <CardDescription>Envoyé le {previewNotif.dateEnvoi} par {previewNotif.envoyePar}</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                  <div className="p-3 rounded-lg bg-background border">
-                    <p className="text-xs text-muted-foreground">Destinataires</p>
-                    <p className="text-lg font-bold tabular-nums">{formatNumber(previewNotif.nbDestinataires)}</p>
-                  </div>
-                  <div className="p-3 rounded-lg bg-background border">
-                    <p className="text-xs text-muted-foreground">Délivrés</p>
-                    <p className="text-lg font-bold tabular-nums text-emerald-700 dark:text-emerald-400">{formatNumber(previewNotif.nbDelivres)}</p>
-                  </div>
-                  <div className="p-3 rounded-lg bg-background border">
-                    <p className="text-xs text-muted-foreground">Échoués</p>
-                    <p className="text-lg font-bold tabular-nums text-red-700 dark:text-red-400">{formatNumber(previewNotif.nbEchoues)}</p>
-                  </div>
-                  <div className="p-3 rounded-lg bg-background border">
-                    <p className="text-xs text-muted-foreground">Taux délivrance</p>
-                    <p className="text-lg font-bold tabular-nums">{((previewNotif.nbDelivres / previewNotif.nbDestinataires) * 100).toFixed(1)}%</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2 flex-wrap">
-                  <TypeBadge type={previewNotif.type} />
-                  <PriorityBadge priority={previewNotif.priorite} />
-                  <SentStatusBadge statut={previewNotif.statut} />
-                  {previewNotif.canaux.map((ch) => {
-                    const cfg = channelConfig[ch]
-                    return (
-                      <span key={ch} className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium ${cfg.bgClass} ${cfg.iconClass}`}>
-                        <cfg.icon className="size-3" />{cfg.label}
-                      </span>
-                    )
-                  })}
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground mb-1">Audience</p>
-                  <p className="text-sm font-medium">{previewNotif.audienceDetail}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground mb-1">Message</p>
-                  <div className="rounded-lg bg-background border p-3">
-                    <p className="text-sm leading-relaxed">{previewNotif.message}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          )}
         </TabsContent>
 
-        {/* ── Tab: Modèles ──────────────────────────────────────────────────── */}
+        {/* ═══════════════════════════════════════════════════════════════════
+            TAB: MODÈLES
+        ═══════════════════════════════════════════════════════════════════ */}
         <TabsContent value="templates" className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
             {notificationTemplates.map((tpl) => {
               const tcfg = typeConfig[tpl.categorie]
               const TIcon = tcfg.icon
               return (
-                <Card key={tpl.id} className="hover:shadow-md transition-shadow">
+                <Card key={tpl.id} className="hover:shadow-md transition-shadow group">
                   <CardHeader className="pb-3">
                     <div className="flex items-start justify-between gap-2">
-                      <div className="flex items-center gap-2">
-                        <div className={`flex size-8 items-center justify-center rounded-lg ${tcfg.className}`}>
+                      <div className="flex items-center gap-2.5">
+                        <div className={`flex size-9 items-center justify-center rounded-xl ${tcfg.bgClass}`}>
                           <TIcon className="size-4" />
                         </div>
                         <div>
@@ -759,34 +1007,38 @@ export function NotificationsPage() {
                     </div>
                     <div className="flex items-center gap-2 flex-wrap">
                       <p className="text-xs text-muted-foreground">Canaux :</p>
-                      {tpl.canauxSuggere.map((ch) => {
-                        const cfg = channelConfig[ch]
-                        return (
-                          <span key={ch} className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium ${cfg.bgClass} ${cfg.iconClass}`}>
-                            <cfg.icon className="size-2.5" />{cfg.label}
-                          </span>
-                        )
-                      })}
+                      {tpl.canauxSuggere.map((ch) => <ChannelIcon key={ch} channel={ch} />)}
                     </div>
-                    <div>
-                      <p className="text-xs text-muted-foreground mb-1">Variables</p>
-                      <div className="flex flex-wrap gap-1">
-                        {tpl.variableSlots.map((slot) => (
-                          <Badge key={slot} variant="outline" className="text-xs font-mono">
-                            {`{{${slot}}}`}
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p className="text-xs text-muted-foreground">Audience :</p>
+                      <span className="text-xs font-medium">{audienceConfig[tpl.audienceSuggere]?.shortLabel}</span>
+                    </div>
+                    {tpl.variableSlots.length > 0 && (
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <p className="text-xs text-muted-foreground">Variables :</p>
+                        {tpl.variableSlots.map((v) => (
+                          <Badge key={v} variant="outline" className="text-[10px] px-1.5 py-0 font-mono">
+                            {`{{${v}}}`}
                           </Badge>
                         ))}
                       </div>
+                    )}
+                    <Separator />
+                    <div className="flex gap-2">
+                      <Button
+                        variant="default"
+                        size="sm"
+                        className="flex-1 gap-1.5 text-xs bg-emerald-600 hover:bg-emerald-700 text-white"
+                        onClick={() => applyTemplate(tpl.id)}
+                      >
+                        <Send className="size-3" />
+                        Utiliser
+                      </Button>
+                      <Button variant="outline" size="sm" className="gap-1.5 text-xs">
+                        <Eye className="size-3" />
+                        Aperçu
+                      </Button>
                     </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="w-full gap-2 mt-2"
-                      onClick={() => applyTemplate(tpl.id)}
-                    >
-                      <ArrowRight className="size-3.5" />
-                      Utiliser ce modèle
-                    </Button>
                   </CardContent>
                 </Card>
               )

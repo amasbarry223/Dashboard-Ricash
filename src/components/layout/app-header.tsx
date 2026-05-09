@@ -27,7 +27,7 @@ const pageTitles: Record<string, string> = {
   transactions: "Gestion des Transactions",
   agents: "Gestion des Agents",
   partners: "Gestion des Partenaires",
-  notifications: "Système de Notifications",
+  notifications: "Centre de Notifications",
   configuration: "Configuration de la Plateforme",
 }
 
