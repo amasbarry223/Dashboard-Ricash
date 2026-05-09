@@ -115,3 +115,45 @@ Stage Summary:
 - Premium card hover effects (lift + glow)
 - Subtle background mesh pattern
 - All lint checks pass, dev server running on port 3000
+
+---
+Task ID: 4
+Agent: Main Agent
+Task: Redesign Users datatable - Add Actions column with icons
+
+Work Log:
+- Read current users-page.tsx to understand existing structure
+- Read mock-data.ts, table.tsx, dropdown-menu.tsx, tooltip.tsx, dialog.tsx, alert-dialog.tsx components
+- Completely redesigned users-page.tsx with modern datatable:
+  - Added sortable columns with SortableHeader component (click to toggle asc/desc sort)
+  - Added checkbox selection column for bulk operations
+  - Added Actions column with icon buttons per row:
+    - Eye icon (View details) with tooltip
+    - Pencil icon (Edit) with tooltip
+    - MoreHorizontal icon (Dropdown menu) with extended actions:
+      - Voir le profil, Modifier, Voir transactions, Historique KYC, Envoyer message
+      - Réactiver/Suspendre le compte (contextual)
+      - Supprimer (destructive, with confirmation)
+  - Added Edit Dialog with form fields (name, email, phone, status, KYC level)
+  - Added Delete Confirmation AlertDialog with warning message
+  - Added Suspend/Reactivate Confirmation AlertDialog (contextual based on status)
+  - Added bulk action bar when rows are selected (Validate KYC, Send notification, Suspend)
+  - Added filter reset button (FilterX icon) when active filters exist
+  - Added Export button in header
+  - Added UserPlus icon for Nouvel Utilisateur button
+  - Improved StatsCards with trend descriptions
+  - Improved detail dialog with icon-labeled contact info (Mail, Phone, MapPin)
+  - Added edit/delete buttons in detail dialog header
+  - Empty state with icon and reset filter link
+  - Replaced row click with explicit action buttons for clarity
+- Verified lint passes clean and dev server returns HTTP 200
+
+Stage Summary:
+- Redesigned Users datatable with modern UX/UI
+- Actions column with Eye, Pencil, MoreHorizontal (dropdown) icons per row
+- Sortable columns (ID, Name, Status, KYC, Balance, Activity)
+- Checkbox row selection with bulk action bar
+- Edit Dialog, Delete AlertDialog, Suspend/Reactivate AlertDialog
+- Tooltips on all action icons
+- Filter reset button and Export button
+- All lint checks pass, dev server running on port 3000
