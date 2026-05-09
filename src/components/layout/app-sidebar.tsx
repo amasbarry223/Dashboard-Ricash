@@ -13,6 +13,7 @@ import {
   LogOut,
   Gem,
   User,
+  Sparkles,
 } from "lucide-react"
 import {
   Sidebar,
@@ -74,12 +75,24 @@ export function AppSidebar() {
           isActive={isActive}
           onClick={() => setCurrentPage(item.key)}
           tooltip={item.label}
+          className={`
+            group relative rounded-xl transition-all duration-200
+            ${isActive
+              ? "bg-sidebar-primary/15 text-sidebar-primary font-semibold shadow-sm shadow-sidebar-primary/10"
+              : "hover:bg-sidebar-accent/60 text-sidebar-foreground/80 hover:text-sidebar-foreground"
+            }
+          `}
         >
-          <item.icon className="size-4" />
-          <span>{item.label}</span>
+          {isActive && (
+            <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 rounded-r-full bg-sidebar-primary" />
+          )}
+          <item.icon className={`size-4 transition-colors ${isActive ? "text-sidebar-primary" : "text-sidebar-foreground/60 group-hover:text-sidebar-foreground/90"}`} />
+          <span className="text-[13px]">{item.label}</span>
         </SidebarMenuButton>
         {badge !== null && badge > 0 && (
-          <SidebarMenuBadge>{badge}</SidebarMenuBadge>
+          <SidebarMenuBadge className="bg-destructive/90 text-white text-[10px] font-bold px-1.5 h-5 rounded-full border-0 shadow-sm">
+            {badge}
+          </SidebarMenuBadge>
         )}
       </SidebarMenuItem>
     )
@@ -94,28 +107,30 @@ export function AppSidebar() {
               <DropdownMenuTrigger asChild>
                 <SidebarMenuButton
                   size="lg"
-                  className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+                  className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground rounded-xl hover:bg-sidebar-accent/60 transition-all"
                 >
-                  <div className="bg-primary text-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg">
-                    <Gem className="size-4" />
+                  <div className="gradient-primary flex aspect-square size-9 items-center justify-center rounded-xl shadow-md shadow-primary/25">
+                    <Sparkles className="size-4 text-primary-foreground" />
                   </div>
                   <div className="grid flex-1 text-left text-sm leading-tight">
-                    <span className="truncate font-bold">RICASH</span>
-                    <span className="text-sidebar-foreground/60 truncate text-xs">Back-Office Admin</span>
+                    <span className="truncate font-bold text-[15px] tracking-tight">RICASH</span>
+                    <span className="text-sidebar-foreground/50 truncate text-[11px]">Back-Office Admin</span>
                   </div>
-                  <ChevronDown className="ml-auto size-4" />
+                  <ChevronDown className="ml-auto size-3.5 text-sidebar-foreground/40" />
                 </SidebarMenuButton>
               </DropdownMenuTrigger>
               <DropdownMenuContent
-                className="w-[--radix-dropdown-menu-trigger-width] min-w-56"
+                className="w-[--radix-dropdown-menu-trigger-width] min-w-56 rounded-xl shadow-lg border-border/50 p-2"
                 side="bottom"
                 align="start"
                 sideOffset={4}
               >
-                <DropdownMenuItem>
+                <DropdownMenuItem className="rounded-lg text-xs">
+                  <div className="size-2 rounded-full bg-emerald-500 mr-2" />
                   <span>Production</span>
                 </DropdownMenuItem>
-                <DropdownMenuItem>
+                <DropdownMenuItem className="rounded-lg text-xs">
+                  <div className="size-2 rounded-full bg-amber-500 mr-2" />
                   <span>Staging</span>
                 </DropdownMenuItem>
               </DropdownMenuContent>
@@ -126,20 +141,24 @@ export function AppSidebar() {
 
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>Principal</SidebarGroupLabel>
+          <SidebarGroupLabel className="text-[10px] uppercase tracking-widest text-sidebar-foreground/40 font-semibold px-3">
+            Principal
+          </SidebarGroupLabel>
           <SidebarGroupContent>
-            <SidebarMenu>
+            <SidebarMenu className="gap-1 px-2">
               {mainNav.map(renderNavItem)}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
 
-        <SidebarSeparator />
+        <SidebarSeparator className="bg-sidebar-border/50" />
 
         <SidebarGroup>
-          <SidebarGroupLabel>Système</SidebarGroupLabel>
+          <SidebarGroupLabel className="text-[10px] uppercase tracking-widest text-sidebar-foreground/40 font-semibold px-3">
+            Système
+          </SidebarGroupLabel>
           <SidebarGroupContent>
-            <SidebarMenu>
+            <SidebarMenu className="gap-1 px-2">
               {secondaryNav.map(renderNavItem)}
             </SidebarMenu>
           </SidebarGroupContent>
@@ -153,37 +172,37 @@ export function AppSidebar() {
               <DropdownMenuTrigger asChild>
                 <SidebarMenuButton
                   size="lg"
-                  className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+                  className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground rounded-xl hover:bg-sidebar-accent/60 transition-all"
                 >
-                  <Avatar className="size-8 rounded-lg">
-                    <AvatarFallback className="rounded-lg bg-primary/20 text-primary text-xs font-bold">
+                  <Avatar className="size-9 rounded-xl">
+                    <AvatarFallback className="rounded-xl bg-sidebar-primary/15 text-sidebar-primary text-xs font-bold ring-1 ring-sidebar-primary/25">
                       SA
                     </AvatarFallback>
                   </Avatar>
                   <div className="grid flex-1 text-left text-sm leading-tight">
-                    <span className="truncate font-semibold">Super Admin</span>
-                    <span className="text-sidebar-foreground/60 truncate text-xs">superadmin@ricash.com</span>
+                    <span className="truncate font-semibold text-[13px]">Super Admin</span>
+                    <span className="text-sidebar-foreground/50 truncate text-[11px]">superadmin@ricash.com</span>
                   </div>
-                  <ChevronDown className="ml-auto size-4" />
+                  <ChevronDown className="ml-auto size-3.5 text-sidebar-foreground/40" />
                 </SidebarMenuButton>
               </DropdownMenuTrigger>
               <DropdownMenuContent
-                className="w-[--radix-dropdown-menu-trigger-width] min-w-56"
+                className="w-[--radix-dropdown-menu-trigger-width] min-w-56 rounded-xl shadow-lg border-border/50 p-2"
                 side="bottom"
                 align="end"
                 sideOffset={4}
               >
-                <DropdownMenuItem onClick={() => setCurrentPage("settings")}>
-                  <User className="mr-2 size-4" />
+                <DropdownMenuItem onClick={() => setCurrentPage("settings")} className="rounded-lg text-xs">
+                  <User className="mr-2 size-3.5" />
                   <span>Mon Profil</span>
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setCurrentPage("settings")}>
-                  <Settings className="mr-2 size-4" />
+                <DropdownMenuItem onClick={() => setCurrentPage("settings")} className="rounded-lg text-xs">
+                  <Settings className="mr-2 size-3.5" />
                   <span>Paramètres</span>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem className="text-destructive">
-                  <LogOut className="mr-2 size-4" />
+                <DropdownMenuItem className="rounded-lg text-xs text-destructive focus:text-destructive">
+                  <LogOut className="mr-2 size-3.5" />
                   <span>Déconnexion</span>
                 </DropdownMenuItem>
               </DropdownMenuContent>
