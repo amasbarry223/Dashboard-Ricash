@@ -316,29 +316,171 @@ export interface Agent {
   nom: string
   prenom: string
   telephone: string
+  email: string
   commerce: string
   localisation: string
+  ville: string
+  pays: string
+  adresse: string
   statut: AgentStatus
   floatActuel: number
   floatMin: number
   commission: number
   dateApprobation: string
+  dateCreation: string
   transactionsJour: number
   volumeJour: number
+  performance: number
+  apiConnected: boolean
 }
 
 export const agents: Agent[] = [
-  { id: "AGT-012", code: "AGT012", nom: "Koné", prenom: "Mamadou", telephone: "+223 76 55 55 01", commerce: "Boutique Al Baraka", localisation: "Bamako, Commune III", statut: "ACTIVE", floatActuel: 2500000, floatMin: 500000, commission: 1.5, dateApprobation: "2024-02-15", transactionsJour: 45, volumeJour: 3200000 },
-  { id: "AGT-023", code: "AGT023", nom: "Touré", prenom: "Awa", telephone: "+223 77 55 55 02", commerce: "Supermarché Sira", localisation: "Bamako, Commune V", statut: "ACTIVE", floatActuel: 4200000, floatMin: 800000, commission: 1.2, dateApprobation: "2024-03-20", transactionsJour: 62, volumeJour: 5100000 },
-  { id: "AGT-045", code: "AGT045", nom: "Diarra", prenom: "Souleymane", telephone: "+223 78 55 55 03", commerce: "Pharmacie Santé Plus", localisation: "Bamako, Commune I", statut: "ACTIVE", floatActuel: 1800000, floatMin: 600000, commission: 1.8, dateApprobation: "2024-04-10", transactionsJour: 28, volumeJour: 2100000 },
-  { id: "AGT-067", code: "AGT067", nom: "Sidibé", prenom: "Rokia", telephone: "+223 79 55 55 04", commerce: "Marché Central", localisation: "Bamako, Commune II", statut: "ACTIVE", floatActuel: 850000, floatMin: 500000, commission: 1.5, dateApprobation: "2024-05-05", transactionsJour: 38, volumeJour: 2800000 },
-  { id: "AGT-089", code: "AGT089", nom: "Sylla", prenom: "Modibo", telephone: "+223 70 55 55 05", commerce: "Cyber Café Digital", localisation: "Sikasso", statut: "ACTIVE", floatActuel: 200000, floatMin: 400000, commission: 1.3, dateApprobation: "2024-06-12", transactionsJour: 15, volumeJour: 950000 },
-  { id: "AGT-142", code: "AGT142", nom: "Haidara", prenom: "Fatoumata", telephone: "+223 71 55 55 06", commerce: "Station Total Les Pins", localisation: "Bamako, Commune IV", statut: "ACTIVE", floatActuel: 3800000, floatMin: 700000, commission: 1.0, dateApprobation: "2024-01-08", transactionsJour: 55, volumeJour: 4500000 },
-  { id: "AGT-201", code: "AGT201", nom: "Maïga", prenom: "Boureima", telephone: "+223 72 55 55 07", commerce: "Boutique La Chance", localisation: "Kayes", statut: "PENDING", floatActuel: 0, floatMin: 500000, commission: 0, dateApprobation: "", transactionsJour: 0, volumeJour: 0 },
-  { id: "AGT-202", code: "AGT202", nom: "Cissé", prenom: "Adama", telephone: "+223 73 55 55 08", commerce: "Épicerie Bon Prix", localisation: "Mopti", statut: "PENDING", floatActuel: 0, floatMin: 400000, commission: 0, dateApprobation: "", transactionsJour: 0, volumeJour: 0 },
-  { id: "AGT-099", code: "AGT099", nom: "Traoré", prenom: "Lassine", telephone: "+223 74 55 55 09", commerce: "Depot Express", localisation: "Ségou", statut: "SUSPENDED", floatActuel: 0, floatMin: 300000, commission: 1.5, dateApprobation: "2024-03-01", transactionsJour: 0, volumeJour: 0 },
-  { id: "AGT-100", code: "AGT100", nom: "Sakho", prenom: "Mamadou", telephone: "+223 75 55 55 10", commerce: "Shop Express", localisation: "Gao", statut: "INACTIVE", floatActuel: 0, floatMin: 300000, commission: 1.2, dateApprobation: "2024-07-15", transactionsJour: 0, volumeJour: 0 },
+  { id: "AGT-012", code: "AGT012", nom: "Koné", prenom: "Mamadou", telephone: "+223 76 55 55 01", email: "mamadou.kone@ricash.com", commerce: "Boutique Al Baraka", localisation: "Bamako, Commune III", ville: "Bamako", pays: "Mali", adresse: "Quartier Badalabougou, Rue 12", statut: "ACTIVE", floatActuel: 2500000, floatMin: 500000, commission: 1.5, dateApprobation: "2024-02-15", dateCreation: "2024-01-20", transactionsJour: 45, volumeJour: 3200000, performance: 92, apiConnected: true },
+  { id: "AGT-023", code: "AGT023", nom: "Touré", prenom: "Awa", telephone: "+223 77 55 55 02", email: "awa.toure@ricash.com", commerce: "Supermarché Sira", localisation: "Bamako, Commune V", ville: "Bamako", pays: "Mali", adresse: "Kalaban-Coura, Avenue de l'OUA", statut: "ACTIVE", floatActuel: 4200000, floatMin: 800000, commission: 1.2, dateApprobation: "2024-03-20", dateCreation: "2024-03-01", transactionsJour: 62, volumeJour: 5100000, performance: 97, apiConnected: true },
+  { id: "AGT-045", code: "AGT045", nom: "Diarra", prenom: "Souleymane", telephone: "+223 78 55 55 03", email: "souleymane.diarra@ricash.com", commerce: "Pharmacie Santé Plus", localisation: "Bamako, Commune I", ville: "Bamako", pays: "Mali", adresse: "Quartier Banconi, Rue 45", statut: "ACTIVE", floatActuel: 1800000, floatMin: 600000, commission: 1.8, dateApprobation: "2024-04-10", dateCreation: "2024-03-25", transactionsJour: 28, volumeJour: 2100000, performance: 78, apiConnected: true },
+  { id: "AGT-067", code: "AGT067", nom: "Sidibé", prenom: "Rokia", telephone: "+223 79 55 55 04", email: "rokia.sidibe@ricash.com", commerce: "Marché Central", localisation: "Bamako, Commune II", ville: "Bamako", pays: "Mali", adresse: "Marché Central, Allée 3", statut: "ACTIVE", floatActuel: 850000, floatMin: 500000, commission: 1.5, dateApprobation: "2024-05-05", dateCreation: "2024-04-15", transactionsJour: 38, volumeJour: 2800000, performance: 85, apiConnected: true },
+  { id: "AGT-089", code: "AGT089", nom: "Sylla", prenom: "Modibo", telephone: "+223 70 55 55 05", email: "modibo.sylla@ricash.com", commerce: "Cyber Café Digital", localisation: "Sikasso", ville: "Sikasso", pays: "Mali", adresse: "Centre-ville, Route de Koutiala", statut: "ACTIVE", floatActuel: 200000, floatMin: 400000, commission: 1.3, dateApprobation: "2024-06-12", dateCreation: "2024-05-28", transactionsJour: 15, volumeJour: 950000, performance: 65, apiConnected: false },
+  { id: "AGT-142", code: "AGT142", nom: "Haidara", prenom: "Fatoumata", telephone: "+223 71 55 55 06", email: "fatoumata.haidara@ricash.com", commerce: "Station Total Les Pins", localisation: "Bamako, Commune IV", ville: "Bamako", pays: "Mali", adresse: "Quartier Les Pins, Boulevard de l'Indépendance", statut: "ACTIVE", floatActuel: 3800000, floatMin: 700000, commission: 1.0, dateApprobation: "2024-01-08", dateCreation: "2023-12-20", transactionsJour: 55, volumeJour: 4500000, performance: 94, apiConnected: true },
+  { id: "AGT-201", code: "AGT201", nom: "Maïga", prenom: "Boureima", telephone: "+223 72 55 55 07", email: "bouba.maiga@email.com", commerce: "Boutique La Chance", localisation: "Kayes", ville: "Kayes", pays: "Mali", adresse: "Quartier Médine", statut: "PENDING", floatActuel: 0, floatMin: 500000, commission: 0, dateApprobation: "", dateCreation: "2025-06-01", transactionsJour: 0, volumeJour: 0, performance: 0, apiConnected: false },
+  { id: "AGT-202", code: "AGT202", nom: "Cissé", prenom: "Adama", telephone: "+223 73 55 55 08", email: "adama.cisse@email.com", commerce: "Épicerie Bon Prix", localisation: "Mopti", ville: "Mopti", pays: "Mali", adresse: "Quartier Komoguel", statut: "PENDING", floatActuel: 0, floatMin: 400000, commission: 0, dateApprobation: "", dateCreation: "2025-06-05", transactionsJour: 0, volumeJour: 0, performance: 0, apiConnected: false },
+  { id: "AGT-099", code: "AGT099", nom: "Traoré", prenom: "Lassine", telephone: "+223 74 55 55 09", email: "lassine.traore@ricash.com", commerce: "Depot Express", localisation: "Ségou", ville: "Ségou", pays: "Mali", adresse: "Quartier Dar Salam", statut: "SUSPENDED", floatActuel: 0, floatMin: 300000, commission: 1.5, dateApprobation: "2024-03-01", dateCreation: "2024-02-10", transactionsJour: 0, volumeJour: 0, performance: 35, apiConnected: false },
+  { id: "AGT-100", code: "AGT100", nom: "Sakho", prenom: "Mamadou", telephone: "+223 75 55 55 10", email: "mamadou.sakho@ricash.com", commerce: "Shop Express", localisation: "Gao", ville: "Gao", pays: "Mali", adresse: "Centre-ville", statut: "INACTIVE", floatActuel: 0, floatMin: 300000, commission: 1.2, dateApprobation: "2024-07-15", dateCreation: "2024-06-20", transactionsJour: 0, volumeJour: 0, performance: 0, apiConnected: false },
 ]
+
+// ─── Agent Float Movements ────────────────────────────────────────────────────
+export type FloatMovementType = "APPROVISIONNEMENT" | "RETRAIT" | "AJUSTEMENT"
+
+export interface FloatMovement {
+  id: string
+  agentId: string
+  type: FloatMovementType
+  montant: number
+  soldeAvant: number
+  soldeApres: number
+  creePar: string
+  date: string
+  justification: string
+}
+
+export const floatMovements: FloatMovement[] = [
+  // AGT-012
+  { id: "FM-001", agentId: "AGT-012", type: "APPROVISIONNEMENT", montant: 1000000, soldeAvant: 1500000, soldeApres: 2500000, creePar: "Admin Financier", date: "2025-06-10 09:00", justification: "Rechargement hebdomadaire" },
+  { id: "FM-002", agentId: "AGT-012", type: "AJUSTEMENT", montant: 50000, soldeAvant: 2450000, soldeApres: 2500000, creePar: "Super Admin", date: "2025-06-08 14:30", justification: "Correction après audit" },
+  { id: "FM-003", agentId: "AGT-012", type: "RETRAIT", montant: -200000, soldeAvant: 2650000, soldeApres: 2450000, creePar: "Admin Financier", date: "2025-06-05 11:00", justification: "Retrait partiel demandé par l'agent" },
+  { id: "FM-004", agentId: "AGT-012", type: "APPROVISIONNEMENT", montant: 500000, soldeAvant: 2150000, soldeApres: 2650000, creePar: "Admin Financier", date: "2025-06-01 08:30", justification: "Rechargement début de mois" },
+  // AGT-023
+  { id: "FM-005", agentId: "AGT-023", type: "APPROVISIONNEMENT", montant: 2000000, soldeAvant: 2200000, soldeApres: 4200000, creePar: "Admin Financier", date: "2025-06-09 10:00", justification: "Rechargement suite à forte demande" },
+  { id: "FM-006", agentId: "AGT-023", type: "APPROVISIONNEMENT", montant: 1000000, soldeAvant: 1200000, soldeApres: 2200000, creePar: "Admin Financier", date: "2025-05-25 09:00", justification: "Rechargement hebdomadaire" },
+  // AGT-045
+  { id: "FM-007", agentId: "AGT-045", type: "APPROVISIONNEMENT", montant: 800000, soldeAvant: 1000000, soldeApres: 1800000, creePar: "Admin Financier", date: "2025-06-08 08:30", justification: "Rechargement suite alerte float bas" },
+  { id: "FM-008", agentId: "AGT-045", type: "RETRAIT", montant: -300000, soldeAvant: 1300000, soldeApres: 1000000, creePar: "Admin Financier", date: "2025-06-03 15:00", justification: "Retrait partiel demandé par l'agent" },
+  // AGT-067
+  { id: "FM-009", agentId: "AGT-067", type: "APPROVISIONNEMENT", montant: 500000, soldeAvant: 350000, soldeApres: 850000, creePar: "Admin Financier", date: "2025-06-10 07:45", justification: "Rechargement urgent — float critique" },
+  { id: "FM-010", agentId: "AGT-067", type: "APPROVISIONNEMENT", montant: 500000, soldeAvant: 500000, soldeApres: 1000000, creePar: "Admin Financier", date: "2025-06-03 09:00", justification: "Rechargement hebdomadaire" },
+  // AGT-089
+  { id: "FM-011", agentId: "AGT-089", type: "APPROVISIONNEMENT", montant: 400000, soldeAvant: 0, soldeApres: 400000, creePar: "Admin Financier", date: "2025-06-09 08:00", justification: "Premier approvisionnement" },
+  { id: "FM-012", agentId: "AGT-089", type: "RETRAIT", montant: -200000, soldeAvant: 400000, soldeApres: 200000, creePar: "Admin Financier", date: "2025-06-10 16:00", justification: "Retrait pour couverture frais" },
+  // AGT-142
+  { id: "FM-013", agentId: "AGT-142", type: "APPROVISIONNEMENT", montant: 2000000, soldeAvant: 1800000, soldeApres: 3800000, creePar: "Admin Financier", date: "2025-06-10 08:00", justification: "Rechargement hebdomadaire" },
+  { id: "FM-014", agentId: "AGT-142", type: "APPROVISIONNEMENT", montant: 1500000, soldeAvant: 800000, soldeApres: 2300000, creePar: "Admin Financier", date: "2025-06-02 09:30", justification: "Rechargement début de mois" },
+]
+
+// ─── Agent Documents ──────────────────────────────────────────────────────────
+export type DocumentStatus = "VALIDE" | "EN_ATTENTE" | "REJETE"
+
+export interface AgentDocument {
+  id: string
+  agentId: string
+  nom: string
+  type: string
+  statut: DocumentStatus
+  dateSoumission: string
+}
+
+export const agentDocuments: AgentDocument[] = [
+  // AGT-012
+  { id: "DOC-012-1", agentId: "AGT-012", nom: "Carte d'identité nationale", type: "CNI", statut: "VALIDE", dateSoumission: "2024-01-20" },
+  { id: "DOC-012-2", agentId: "AGT-012", nom: "Registre de commerce", type: "RC", statut: "VALIDE", dateSoumission: "2024-01-20" },
+  { id: "DOC-012-3", agentId: "AGT-012", nom: "Attestation de domicile", type: "ATTEST", statut: "VALIDE", dateSoumission: "2024-01-20" },
+  // AGT-023
+  { id: "DOC-023-1", agentId: "AGT-023", nom: "Carte d'identité nationale", type: "CNI", statut: "VALIDE", dateSoumission: "2024-03-01" },
+  { id: "DOC-023-2", agentId: "AGT-023", nom: "Registre de commerce", type: "RC", statut: "VALIDE", dateSoumission: "2024-03-01" },
+  { id: "DOC-023-3", agentId: "AGT-023", nom: "Attestation de domicile", type: "ATTEST", statut: "VALIDE", dateSoumission: "2024-03-01" },
+  // AGT-045
+  { id: "DOC-045-1", agentId: "AGT-045", nom: "Carte d'identité nationale", type: "CNI", statut: "VALIDE", dateSoumission: "2024-03-25" },
+  { id: "DOC-045-2", agentId: "AGT-045", nom: "Registre de commerce", type: "RC", statut: "VALIDE", dateSoumission: "2024-03-25" },
+  { id: "DOC-045-3", agentId: "AGT-045", nom: "Permis d'exploitation pharmacie", type: "PERMIS", statut: "VALIDE", dateSoumission: "2024-03-25" },
+  // AGT-067
+  { id: "DOC-067-1", agentId: "AGT-067", nom: "Carte d'identité nationale", type: "CNI", statut: "VALIDE", dateSoumission: "2024-04-15" },
+  { id: "DOC-067-2", agentId: "AGT-067", nom: "Autorisation marché", type: "ATTEST", statut: "VALIDE", dateSoumission: "2024-04-15" },
+  // AGT-089
+  { id: "DOC-089-1", agentId: "AGT-089", nom: "Carte d'identité nationale", type: "CNI", statut: "VALIDE", dateSoumission: "2024-05-28" },
+  { id: "DOC-089-2", agentId: "AGT-089", nom: "Registre de commerce", type: "RC", statut: "VALIDE", dateSoumission: "2024-05-28" },
+  { id: "DOC-089-3", agentId: "AGT-089", nom: "Attestation de domicile", type: "ATTEST", statut: "EN_ATTENTE", dateSoumission: "2024-05-28" },
+  // AGT-142
+  { id: "DOC-142-1", agentId: "AGT-142", nom: "Carte d'identité nationale", type: "CNI", statut: "VALIDE", dateSoumission: "2023-12-20" },
+  { id: "DOC-142-2", agentId: "AGT-142", nom: "Registre de commerce", type: "RC", statut: "VALIDE", dateSoumission: "2023-12-20" },
+  { id: "DOC-142-3", agentId: "AGT-142", nom: "Attestation de domicile", type: "ATTEST", statut: "VALIDE", dateSoumission: "2023-12-20" },
+  // AGT-201 (PENDING)
+  { id: "DOC-201-1", agentId: "AGT-201", nom: "Carte d'identité nationale", type: "CNI", statut: "EN_ATTENTE", dateSoumission: "2025-06-01" },
+  { id: "DOC-201-2", agentId: "AGT-201", nom: "Registre de commerce", type: "RC", statut: "EN_ATTENTE", dateSoumission: "2025-06-01" },
+  { id: "DOC-201-3", agentId: "AGT-201", nom: "Attestation de domicile", type: "ATTEST", statut: "REJETE", dateSoumission: "2025-06-01" },
+  // AGT-202 (PENDING)
+  { id: "DOC-202-1", agentId: "AGT-202", nom: "Carte d'identité nationale", type: "CNI", statut: "EN_ATTENTE", dateSoumission: "2025-06-05" },
+  { id: "DOC-202-2", agentId: "AGT-202", nom: "Registre de commerce", type: "RC", statut: "EN_ATTENTE", dateSoumission: "2025-06-05" },
+  // AGT-099 (SUSPENDED)
+  { id: "DOC-099-1", agentId: "AGT-099", nom: "Carte d'identité nationale", type: "CNI", statut: "VALIDE", dateSoumission: "2024-02-10" },
+  { id: "DOC-099-2", agentId: "AGT-099", nom: "Registre de commerce", type: "RC", statut: "VALIDE", dateSoumission: "2024-02-10" },
+  // AGT-100 (INACTIVE)
+  { id: "DOC-100-1", agentId: "AGT-100", nom: "Carte d'identité nationale", type: "CNI", statut: "VALIDE", dateSoumission: "2024-06-20" },
+  { id: "DOC-100-2", agentId: "AGT-100", nom: "Registre de commerce", type: "RC", statut: "REJETE", dateSoumission: "2024-06-20" },
+]
+
+// ─── Agent Performance Data ───────────────────────────────────────────────────
+export interface AgentDailyPerformance {
+  date: string
+  commissions: number
+  volume: number
+}
+
+export const agentPerformanceData: Record<string, AgentDailyPerformance[]> = {
+  "AGT-012": [
+    { date: "28 Mai", commissions: 48000, volume: 3200000 }, { date: "29 Mai", commissions: 52000, volume: 3460000 },
+    { date: "30 Mai", commissions: 41000, volume: 2730000 }, { date: "31 Mai", commissions: 63000, volume: 4200000 },
+    { date: "1 Juin", commissions: 55000, volume: 3660000 }, { date: "2 Juin", commissions: 49000, volume: 3270000 },
+    { date: "3 Juin", commissions: 58000, volume: 3870000 }, { date: "4 Juin", commissions: 44000, volume: 2930000 },
+    { date: "5 Juin", commissions: 61000, volume: 4070000 }, { date: "6 Juin", commissions: 53000, volume: 3530000 },
+    { date: "7 Juin", commissions: 67000, volume: 4470000 }, { date: "8 Juin", commissions: 59000, volume: 3930000 },
+    { date: "9 Juin", commissions: 71000, volume: 4730000 }, { date: "10 Juin", commissions: 48000, volume: 3200000 },
+  ],
+  "AGT-023": [
+    { date: "28 Mai", commissions: 62000, volume: 5160000 }, { date: "29 Mai", commissions: 71000, volume: 5920000 },
+    { date: "30 Mai", commissions: 58000, volume: 4830000 }, { date: "31 Mai", commissions: 78000, volume: 6500000 },
+    { date: "1 Juin", commissions: 65000, volume: 5420000 }, { date: "2 Juin", commissions: 72000, volume: 6000000 },
+    { date: "3 Juin", commissions: 69000, volume: 5750000 }, { date: "4 Juin", commissions: 61000, volume: 5080000 },
+    { date: "5 Juin", commissions: 74000, volume: 6170000 }, { date: "6 Juin", commissions: 67000, volume: 5580000 },
+    { date: "7 Juin", commissions: 81000, volume: 6750000 }, { date: "8 Juin", commissions: 73000, volume: 6080000 },
+    { date: "9 Juin", commissions: 85000, volume: 7080000 }, { date: "10 Juin", commissions: 61000, volume: 5100000 },
+  ],
+  "AGT-045": [
+    { date: "28 Mai", commissions: 38000, volume: 2110000 }, { date: "29 Mai", commissions: 42000, volume: 2330000 },
+    { date: "30 Mai", commissions: 31000, volume: 1720000 }, { date: "31 Mai", commissions: 48000, volume: 2670000 },
+    { date: "1 Juin", commissions: 35000, volume: 1940000 }, { date: "2 Juin", commissions: 39000, volume: 2170000 },
+    { date: "3 Juin", commissions: 33000, volume: 1830000 }, { date: "4 Juin", commissions: 45000, volume: 2500000 },
+    { date: "5 Juin", commissions: 37000, volume: 2060000 }, { date: "6 Juin", commissions: 41000, volume: 2280000 },
+    { date: "7 Juin", commissions: 47000, volume: 2610000 }, { date: "8 Juin", commissions: 36000, volume: 2000000 },
+    { date: "9 Juin", commissions: 50000, volume: 2780000 }, { date: "10 Juin", commissions: 38000, volume: 2100000 },
+  ],
+  "AGT-142": [
+    { date: "28 Mai", commissions: 55000, volume: 5500000 }, { date: "29 Mai", commissions: 61000, volume: 6100000 },
+    { date: "30 Mai", commissions: 48000, volume: 4800000 }, { date: "31 Mai", commissions: 67000, volume: 6700000 },
+    { date: "1 Juin", commissions: 52000, volume: 5200000 }, { date: "2 Juin", commissions: 59000, volume: 5900000 },
+    { date: "3 Juin", commissions: 63000, volume: 6300000 }, { date: "4 Juin", commissions: 50000, volume: 5000000 },
+    { date: "5 Juin", commissions: 58000, volume: 5800000 }, { date: "6 Juin", commissions: 65000, volume: 6500000 },
+    { date: "7 Juin", commissions: 70000, volume: 7000000 }, { date: "8 Juin", commissions: 54000, volume: 5400000 },
+    { date: "9 Juin", commissions: 72000, volume: 7200000 }, { date: "10 Juin", commissions: 45000, volume: 4500000 },
+  ],
+}
 
 // ─── Partners ────────────────────────────────────────────────────────────────
 export type PartnerStatus = "ACTIVE" | "INTEGRATING" | "INACTIVE"

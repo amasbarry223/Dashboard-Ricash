@@ -47,6 +47,7 @@ import {
   type Agent,
   type AgentStatus,
 } from "@/lib/mock-data"
+import { AgentDetailPage } from "./agent-detail-page"
 
 /* ─── Helpers ──────────────────────────────────────────────────────────────── */
 
@@ -114,116 +115,6 @@ function FloatProgress({ actuel, min }: { actuel: number; min: number }) {
         />
       </div>
     </div>
-  )
-}
-
-/* ─── Agent Detail Dialog ──────────────────────────────────────────────────── */
-
-function AgentDetailDialog({
-  agent,
-  open,
-  onOpenChange,
-}: {
-  agent: Agent | null
-  open: boolean
-  onOpenChange: (open: boolean) => void
-}) {
-  if (!agent) return null
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <UserCog className="size-5 text-primary" />
-            Détails de l&apos;Agent
-          </DialogTitle>
-        </DialogHeader>
-        <div className="space-y-4">
-          {/* Agent Info Header */}
-          <div className="flex items-center gap-4">
-            <Avatar className="size-14">
-              <AvatarFallback className="bg-primary/10 text-primary font-bold text-lg">
-                {agent.prenom.charAt(0)}{agent.nom.charAt(0)}
-              </AvatarFallback>
-            </Avatar>
-            <div className="flex-1">
-              <h3 className="font-semibold text-lg">{agent.prenom} {agent.nom}</h3>
-              <p className="text-sm text-muted-foreground font-mono">{agent.code}</p>
-              <div className="mt-1">
-                <AgentStatusBadge status={agent.statut} />
-              </div>
-            </div>
-          </div>
-
-          <Separator />
-
-          {/* Contact & Location */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div className="flex items-center gap-2">
-              <Phone className="size-4 text-muted-foreground" />
-              <span className="text-sm">{agent.telephone}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <MapPin className="size-4 text-muted-foreground" />
-              <span className="text-sm">{agent.localisation}</span>
-            </div>
-            <div className="flex items-center gap-2 sm:col-span-2">
-              <Store className="size-4 text-muted-foreground" />
-              <span className="text-sm font-medium">{agent.commerce}</span>
-            </div>
-          </div>
-
-          <Separator />
-
-          {/* Financial Info */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <p className="text-xs text-muted-foreground">Float Actuel</p>
-              <p className="text-lg font-bold text-emerald-700 dark:text-emerald-400">
-                {formatXOF(agent.floatActuel)}
-              </p>
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground">Float Minimum</p>
-              <p className="text-lg font-semibold text-muted-foreground">
-                {formatXOF(agent.floatMin)}
-              </p>
-            </div>
-          </div>
-
-          <FloatProgress actuel={agent.floatActuel} min={agent.floatMin} />
-
-          <Separator />
-
-          {/* Performance */}
-          <div className="grid grid-cols-3 gap-4">
-            <div>
-              <p className="text-xs text-muted-foreground">Commission</p>
-              <p className="text-sm font-semibold">{agent.commission}%</p>
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground">Tx Aujourd&apos;hui</p>
-              <p className="text-sm font-semibold">{agent.transactionsJour}</p>
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground">Volume Jour</p>
-              <p className="text-sm font-semibold">{agent.volumeJour > 0 ? formatXOF(agent.volumeJour) : "—"}</p>
-            </div>
-          </div>
-
-          {agent.dateApprobation && (
-            <>
-              <Separator />
-              <div>
-                <p className="text-xs text-muted-foreground">Date d&apos;approbation</p>
-                <p className="text-sm">{agent.dateApprobation}</p>
-              </div>
-            </>
-          )}
-        </div>
-      </DialogContent>
-    </Dialog>
   )
 }
 
@@ -496,12 +387,11 @@ function PendingAgentCard({
 export function AgentsPage() {
   const [searchQuery, setSearchQuery] = useState("")
   const [statusFilter, setStatusFilter] = useState<string>("all")
-  const [selectedAgent, setSelectedAgent] = useState<Agent | null>(null)
-  const [detailOpen, setDetailOpen] = useState(false)
   const [approvalAgent, setApprovalAgent] = useState<Agent | null>(null)
   const [approvalOpen, setApprovalOpen] = useState(false)
+  const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null)
 
-  // Stats
+  // Stats (must be before conditional return — hooks order)
   const totalAgents = agents.length
   const activeAgents = agents.filter((a) => a.statut === "ACTIVE").length
   const pendingAgents = agents.filter((a) => a.statut === "PENDING").length
@@ -528,16 +418,19 @@ export function AgentsPage() {
   // Pending agents
   const pendingAgentsList = agents.filter((a) => a.statut === "PENDING")
 
-  // Open detail
-  const openDetail = (agent: Agent) => {
-    setSelectedAgent(agent)
-    setDetailOpen(true)
+  // If an agent is selected, show detail page
+  if (selectedAgentId) {
+    return <AgentDetailPage agentId={selectedAgentId} onBack={() => setSelectedAgentId(null)} />
   }
 
-  // Open approval
+  // Open detail — navigate to detail page
+  const openDetail = (agent: Agent) => {
+    setSelectedAgentId(agent.id)
+  }
+
+  // Open approval — navigate to detail page (approval handled there)
   const openApproval = (agent: Agent) => {
-    setApprovalAgent(agent)
-    setApprovalOpen(true)
+    setSelectedAgentId(agent.id)
   }
 
   return (
@@ -706,13 +599,6 @@ export function AgentsPage() {
           )}
         </TabsContent>
       </Tabs>
-
-      {/* Agent Detail Dialog */}
-      <AgentDetailDialog
-        agent={selectedAgent}
-        open={detailOpen}
-        onOpenChange={setDetailOpen}
-      />
 
       {/* Approval Dialog */}
       <ApprovalDialog
