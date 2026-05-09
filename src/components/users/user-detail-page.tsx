@@ -13,7 +13,7 @@ import {
   ArrowLeft, Pencil, Trash2, Mail, Phone, MapPin, ShieldCheck, ShieldOff,
   Calendar, Wallet, FileText, Clock, Download, Eye, CheckCircle2, XCircle,
   AlertTriangle, User, ArrowUpRight, ArrowDownLeft, ArrowLeftRight, QrCode,
-  Lock, Settings, Activity, Ban,
+  Lock, Settings, Activity, Ban, ChevronLeft, ChevronRight,
 } from "lucide-react"
 import { useState, useMemo } from "react"
 import {
@@ -115,9 +115,59 @@ const activityCatColor: Record<string, string> = {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
+const TX_PER_PAGE = 5
+const HISTORY_PER_PAGE = 5
+
+// ─── Pagination Sub-component ─────────────────────────────────────────────────
+function PaginationControls({ currentPage, totalPages, onPageChange, totalItems, startIndex, endIndex, itemLabel }: {
+  currentPage: number; totalPages: number; onPageChange: (p: number) => void; totalItems: number; startIndex: number; endIndex: number; itemLabel: string
+}) {
+  const getPageNumbers = (): (number | "...")[] => {
+    const pages: (number | "...")[] = []
+    if (totalPages <= 5) { for (let i = 1; i <= totalPages; i++) pages.push(i) }
+    else {
+      pages.push(1)
+      if (currentPage > 3) pages.push("...")
+      const start = Math.max(2, currentPage - 1)
+      const end = Math.min(totalPages - 1, currentPage + 1)
+      for (let i = start; i <= end; i++) pages.push(i)
+      if (currentPage < totalPages - 2) pages.push("...")
+      pages.push(totalPages)
+    }
+    return pages
+  }
+
+  return (
+    <div className="flex flex-col sm:flex-row items-center justify-between gap-3 border-t px-4 py-3">
+      <p className="text-sm text-muted-foreground">
+        {startIndex + 1}–{endIndex} sur {totalItems} {itemLabel}
+      </p>
+      <div className="flex items-center gap-1">
+        <Button variant="outline" size="icon" className="size-8" disabled={currentPage <= 1} onClick={() => onPageChange(currentPage - 1)}>
+          <ChevronLeft className="size-4" /><span className="sr-only">Précédent</span>
+        </Button>
+        {getPageNumbers().map((page, idx) =>
+          page === "..." ? (
+            <span key={`ellipsis-${idx}`} className="px-2 text-muted-foreground text-sm">...</span>
+          ) : (
+            <Button key={page} variant={page === currentPage ? "default" : "outline"} size="icon" className={`size-8 ${page === currentPage ? "bg-emerald-600 hover:bg-emerald-700 text-white" : ""}`} onClick={() => onPageChange(page)}>
+              {page}
+            </Button>
+          )
+        )}
+        <Button variant="outline" size="icon" className="size-8" disabled={currentPage >= totalPages} onClick={() => onPageChange(currentPage + 1)}>
+          <ChevronRight className="size-4" /><span className="sr-only">Suivant</span>
+        </Button>
+      </div>
+    </div>
+  )
+}
+
 export function UserDetailPage({ userId, onBack }: { userId: string; onBack: () => void }) {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [suspendDialogOpen, setSuspendDialogOpen] = useState(false)
+  const [txPage, setTxPage] = useState(1)
+  const [historyPage, setHistoryPage] = useState(1)
 
   const user = users.find((u) => u.id === userId)
 
@@ -125,9 +175,14 @@ export function UserDetailPage({ userId, onBack }: { userId: string; onBack: () 
   const userTransactions = useMemo(() => {
     if (!user) return []
     const fullName = `${user.prenom} ${user.nom}`
-    return transactions.filter(
-      (t) => t.expediteur.includes(fullName) || t.destinataire.includes(fullName) || t.expediteur === user.id || t.destinataire === user.id
-    )
+    // Deduplicate by id since some transactions reference the same user from both sides
+    const seen = new Set<string>()
+    return transactions.filter((t) => {
+      if (seen.has(t.id)) return false
+      const match = t.expediteur.includes(fullName) || t.destinataire.includes(fullName) || t.expediteur === user.id || t.destinataire === user.id
+      if (match) { seen.add(t.id); return true }
+      return false
+    })
   }, [user])
 
   const userDocs = useMemo(() => {
@@ -447,46 +502,61 @@ export function UserDetailPage({ userId, onBack }: { userId: string; onBack: () 
                   <p className="text-sm">Aucune transaction trouvée</p>
                 </div>
               ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow className="bg-muted/50 hover:bg-muted/50">
-                      <TableHead>Référence</TableHead>
-                      <TableHead>Type</TableHead>
-                      <TableHead>Montant</TableHead>
-                      <TableHead className="hidden sm:table-cell">Frais</TableHead>
-                      <TableHead className="hidden md:table-cell">Expéditeur</TableHead>
-                      <TableHead className="hidden md:table-cell">Destinataire</TableHead>
-                      <TableHead>Statut</TableHead>
-                      <TableHead className="hidden lg:table-cell">Date</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {userTransactions.map((tx) => {
-                      const TypeIcon = txTypeIcon[tx.type]
-                      return (
-                        <TableRow key={tx.id}>
-                          <TableCell className="font-mono text-xs">{tx.reference}</TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-2">
-                              <div className={`flex size-7 items-center justify-center rounded-lg ${txTypeColor[tx.type]}`}>
-                                <TypeIcon className="size-3.5" />
-                              </div>
-                              <span className="text-sm font-medium">{txTypeLabel[tx.type]}</span>
-                            </div>
-                          </TableCell>
-                          <TableCell className="font-medium tabular-nums text-sm">{formatXOF(tx.montant)}</TableCell>
-                          <TableCell className="hidden sm:table-cell text-sm text-muted-foreground">{formatXOF(tx.frais)}</TableCell>
-                          <TableCell className="hidden md:table-cell text-sm truncate max-w-[140px]">{tx.expediteur}</TableCell>
-                          <TableCell className="hidden md:table-cell text-sm truncate max-w-[140px]">{tx.destinataire}</TableCell>
-                          <TableCell>
-                            <Badge variant="outline" className={`text-xs ${txStatusClass[tx.statut]}`}>{txStatusLabel[tx.statut]}</Badge>
-                          </TableCell>
-                          <TableCell className="hidden lg:table-cell text-sm text-muted-foreground">{tx.date}</TableCell>
+                <>
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="bg-muted/50 hover:bg-muted/50">
+                          <TableHead>Référence</TableHead>
+                          <TableHead>Type</TableHead>
+                          <TableHead>Montant</TableHead>
+                          <TableHead className="hidden sm:table-cell">Frais</TableHead>
+                          <TableHead className="hidden md:table-cell">Expéditeur</TableHead>
+                          <TableHead className="hidden md:table-cell">Destinataire</TableHead>
+                          <TableHead>Statut</TableHead>
+                          <TableHead className="hidden lg:table-cell">Date</TableHead>
                         </TableRow>
-                      )
-                    })}
-                  </TableBody>
-                </Table>
+                      </TableHeader>
+                      <TableBody>
+                        {userTransactions.slice((txPage - 1) * TX_PER_PAGE, txPage * TX_PER_PAGE).map((tx) => {
+                          const TypeIcon = txTypeIcon[tx.type]
+                          return (
+                            <TableRow key={tx.id}>
+                              <TableCell className="font-mono text-xs">{tx.reference}</TableCell>
+                              <TableCell>
+                                <div className="flex items-center gap-2">
+                                  <div className={`flex size-7 items-center justify-center rounded-lg ${txTypeColor[tx.type]}`}>
+                                    <TypeIcon className="size-3.5" />
+                                  </div>
+                                  <span className="text-sm font-medium">{txTypeLabel[tx.type]}</span>
+                                </div>
+                              </TableCell>
+                              <TableCell className="font-medium tabular-nums text-sm">{formatXOF(tx.montant)}</TableCell>
+                              <TableCell className="hidden sm:table-cell text-sm text-muted-foreground">{formatXOF(tx.frais)}</TableCell>
+                              <TableCell className="hidden md:table-cell text-sm truncate max-w-[140px]">{tx.expediteur}</TableCell>
+                              <TableCell className="hidden md:table-cell text-sm truncate max-w-[140px]">{tx.destinataire}</TableCell>
+                              <TableCell>
+                                <Badge variant="outline" className={`text-xs ${txStatusClass[tx.statut]}`}>{txStatusLabel[tx.statut]}</Badge>
+                              </TableCell>
+                              <TableCell className="hidden lg:table-cell text-sm text-muted-foreground">{tx.date}</TableCell>
+                            </TableRow>
+                          )
+                        })}
+                      </TableBody>
+                    </Table>
+                  </div>
+                  {userTransactions.length > TX_PER_PAGE && (
+                    <PaginationControls
+                      currentPage={txPage}
+                      totalPages={Math.ceil(userTransactions.length / TX_PER_PAGE)}
+                      onPageChange={setTxPage}
+                      totalItems={userTransactions.length}
+                      startIndex={(txPage - 1) * TX_PER_PAGE}
+                      endIndex={Math.min(txPage * TX_PER_PAGE, userTransactions.length)}
+                      itemLabel="transactions"
+                    />
+                  )}
+                </>
               )}
             </CardContent>
           </Card>
@@ -576,26 +646,39 @@ export function UserDetailPage({ userId, onBack }: { userId: string; onBack: () 
                   <p className="text-sm">Aucune activité enregistrée</p>
                 </div>
               ) : (
-                <div className="divide-y">
-                  {userHistory.map((act) => {
-                    const CatIcon = activityCatIcon[act.categorie] || Activity
-                    return (
-                      <div key={act.id} className="flex items-start gap-4 p-4 hover:bg-muted/30 transition-colors">
-                        <div className={`flex size-9 items-center justify-center rounded-lg shrink-0 mt-0.5 ${activityCatColor[act.categorie]}`}>
-                          <CatIcon className="size-4" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center justify-between gap-2">
-                            <p className="font-medium text-sm">{act.action}</p>
-                            <span className="text-xs text-muted-foreground whitespace-nowrap">{act.date}</span>
+                <>
+                  <div className="divide-y">
+                    {userHistory.slice((historyPage - 1) * HISTORY_PER_PAGE, historyPage * HISTORY_PER_PAGE).map((act) => {
+                      const CatIcon = activityCatIcon[act.categorie] || Activity
+                      return (
+                        <div key={act.id} className="flex items-start gap-4 p-4 hover:bg-muted/30 transition-colors">
+                          <div className={`flex size-9 items-center justify-center rounded-lg shrink-0 mt-0.5 ${activityCatColor[act.categorie]}`}>
+                            <CatIcon className="size-4" />
                           </div>
-                          <p className="text-sm text-muted-foreground mt-0.5">{act.details}</p>
-                          <p className="text-xs text-muted-foreground mt-1">IP: {act.ip}</p>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between gap-2">
+                              <p className="font-medium text-sm">{act.action}</p>
+                              <span className="text-xs text-muted-foreground whitespace-nowrap">{act.date}</span>
+                            </div>
+                            <p className="text-sm text-muted-foreground mt-0.5">{act.details}</p>
+                            <p className="text-xs text-muted-foreground mt-1">IP: {act.ip}</p>
+                          </div>
                         </div>
-                      </div>
-                    )
-                  })}
-                </div>
+                      )
+                    })}
+                  </div>
+                  {userHistory.length > HISTORY_PER_PAGE && (
+                    <PaginationControls
+                      currentPage={historyPage}
+                      totalPages={Math.ceil(userHistory.length / HISTORY_PER_PAGE)}
+                      onPageChange={setHistoryPage}
+                      totalItems={userHistory.length}
+                      startIndex={(historyPage - 1) * HISTORY_PER_PAGE}
+                      endIndex={Math.min(historyPage * HISTORY_PER_PAGE, userHistory.length)}
+                      itemLabel="événements"
+                    />
+                  )}
+                </>
               )}
             </CardContent>
           </Card>
