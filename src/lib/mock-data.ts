@@ -95,6 +95,17 @@ export const users: User[] = [
 // ─── KYC ─────────────────────────────────────────────────────────────────────
 export type KYCStatus = "PENDING" | "IN_REVIEW" | "APPROVED" | "REJECTED"
 
+export type KYCDocumentStatus = "VERIFIED" | "PENDING" | "REJECTED"
+
+export interface KYCDocument {
+  nom: string
+  type: string
+  statut: KYCDocumentStatus
+  taille: string
+  dateUpload: string
+  commentaire: string
+}
+
 export interface KYCRequest {
   id: string
   userId: string
@@ -105,17 +116,88 @@ export interface KYCRequest {
   submittedAt: string
   documents: string[]
   riskScore: number
+  // Extended fields for detail page
+  detailedDocuments: KYCDocument[]
+  reviewer: string
+  reviewDate: string
+  decisionDate: string
+  rejectionReason: string
+  reviewNotes: string
+  complianceFlags: string[]
 }
 
 export const kycRequests: KYCRequest[] = [
-  { id: "KYC-001", userId: "USR-001", userName: "Amadou Diallo", currentLevel: "Tier 1", requestedLevel: "Tier 2", status: "IN_REVIEW", submittedAt: "2025-06-08", documents: ["CNI recto/verso", "Selfie biométrique"], riskScore: 12 },
-  { id: "KYC-002", userId: "USR-003", userName: "Moussa Keita", currentLevel: "Tier 0", requestedLevel: "Tier 1", status: "PENDING", submittedAt: "2025-06-10", documents: ["CNI recto/verso"], riskScore: 45 },
-  { id: "KYC-003", userId: "USR-005", userName: "Boubacar Sissoko", currentLevel: "Tier 0", requestedLevel: "Tier 1", status: "REJECTED", submittedAt: "2025-06-01", documents: ["CNI recto/verso"], riskScore: 78 },
-  { id: "KYC-004", userId: "USR-007", userName: "Ibrahim Sacko", currentLevel: "Tier 1", requestedLevel: "Tier 2", status: "PENDING", submittedAt: "2025-06-09", documents: ["CNI recto/verso", "Selfie biométrique"], riskScore: 15 },
-  { id: "KYC-005", userId: "USR-009", userName: "Seydou Camara", currentLevel: "Tier 0", requestedLevel: "Tier 1", status: "IN_REVIEW", submittedAt: "2025-06-07", documents: ["CNI recto/verso"], riskScore: 62 },
-  { id: "KYC-006", userId: "USR-011", userName: "Abdoulaye Bah", currentLevel: "Tier 1", requestedLevel: "Tier 2", status: "APPROVED", submittedAt: "2025-06-04", documents: ["CNI recto/verso", "Selfie biométrique"], riskScore: 8 },
-  { id: "KYC-007", userId: "USR-002", userName: "Fatoumata Traoré", currentLevel: "Tier 1", requestedLevel: "Tier 2", status: "IN_REVIEW", submittedAt: "2025-06-09", documents: ["CNI recto/verso", "Selfie biométrique"], riskScore: 22 },
-  { id: "KYC-008", userId: "USR-006", userName: "Mariam Konaté", currentLevel: "Tier 2", requestedLevel: "Tier 3", status: "PENDING", submittedAt: "2025-06-10", documents: ["CNI recto/verso", "Selfie biométrique", "Justificatif revenus", "Vidéo"], riskScore: 5 },
+  {
+    id: "KYC-001", userId: "USR-001", userName: "Amadou Diallo", currentLevel: "Tier 1", requestedLevel: "Tier 2", status: "IN_REVIEW", submittedAt: "2025-06-08", documents: ["CNI recto/verso", "Selfie biométrique"], riskScore: 12,
+    detailedDocuments: [
+      { nom: "CNI recto", type: "CNI", statut: "VERIFIED", taille: "1.2 MB", dateUpload: "2025-06-08", commentaire: "Document lisible, identité confirmée" },
+      { nom: "CNI verso", type: "CNI", statut: "VERIFIED", taille: "0.9 MB", dateUpload: "2025-06-08", commentaire: "Adresse visible, date de validité OK" },
+      { nom: "Selfie biométrique", type: "SELFIE", statut: "PENDING", taille: "2.1 MB", dateUpload: "2025-06-08", commentaire: "En attente de vérification Smile Identity" },
+    ],
+    reviewer: "Admin Oumar", reviewDate: "2025-06-09", decisionDate: "", rejectionReason: "", reviewNotes: "CNI vérifiée manuellement. Selfie en cours de vérification biométrique via Smile Identity.", complianceFlags: [],
+  },
+  {
+    id: "KYC-002", userId: "USR-003", userName: "Moussa Keita", currentLevel: "Tier 0", requestedLevel: "Tier 1", status: "PENDING", submittedAt: "2025-06-10", documents: ["CNI recto/verso"], riskScore: 45,
+    detailedDocuments: [
+      { nom: "CNI recto", type: "CNI", statut: "PENDING", taille: "1.5 MB", dateUpload: "2025-06-10", commentaire: "" },
+      { nom: "CNI verso", type: "CNI", statut: "PENDING", taille: "1.1 MB", dateUpload: "2025-06-10", commentaire: "" },
+    ],
+    reviewer: "", reviewDate: "", decisionDate: "", rejectionReason: "", reviewNotes: "", complianceFlags: ["Risque moyen — vérification renforcée recommandée"],
+  },
+  {
+    id: "KYC-003", userId: "USR-005", userName: "Boubacar Sissoko", currentLevel: "Tier 0", requestedLevel: "Tier 1", status: "REJECTED", submittedAt: "2025-06-01", documents: ["CNI recto/verso"], riskScore: 78,
+    detailedDocuments: [
+      { nom: "CNI recto", type: "CNI", statut: "REJECTED", taille: "0.8 MB", dateUpload: "2025-06-01", commentaire: "Image floue, illisible" },
+      { nom: "CNI verso", type: "CNI", statut: "REJECTED", taille: "0.7 MB", dateUpload: "2025-06-01", commentaire: "CNI expirée depuis 2024-01" },
+    ],
+    reviewer: "Admin Fatoumata", reviewDate: "2025-06-02", decisionDate: "2025-06-02", rejectionReason: "CNI expirée et image illisible. L'utilisateur doit soumettre un document d'identité valide.", reviewNotes: "Score de risque élevé (78). CNI expirée. Plusieurs tentatives avec documents invalides.", complianceFlags: ["CNI expirée", "Image illisible", "Risque élevé"],
+  },
+  {
+    id: "KYC-004", userId: "USR-007", userName: "Ibrahim Sacko", currentLevel: "Tier 1", requestedLevel: "Tier 2", status: "PENDING", submittedAt: "2025-06-09", documents: ["CNI recto/verso", "Selfie biométrique"], riskScore: 15,
+    detailedDocuments: [
+      { nom: "CNI recto", type: "CNI", statut: "PENDING", taille: "1.3 MB", dateUpload: "2025-06-09", commentaire: "" },
+      { nom: "CNI verso", type: "CNI", statut: "PENDING", taille: "1.0 MB", dateUpload: "2025-06-09", commentaire: "" },
+      { nom: "Selfie biométrique", type: "SELFIE", statut: "PENDING", taille: "1.8 MB", dateUpload: "2025-06-09", commentaire: "" },
+    ],
+    reviewer: "", reviewDate: "", decisionDate: "", rejectionReason: "", reviewNotes: "", complianceFlags: [],
+  },
+  {
+    id: "KYC-005", userId: "USR-009", userName: "Seydou Camara", currentLevel: "Tier 0", requestedLevel: "Tier 1", status: "IN_REVIEW", submittedAt: "2025-06-07", documents: ["CNI recto/verso"], riskScore: 62,
+    detailedDocuments: [
+      { nom: "CNI recto", type: "CNI", statut: "VERIFIED", taille: "1.4 MB", dateUpload: "2025-06-07", commentaire: "Document lisible" },
+      { nom: "CNI verso", type: "CNI", statut: "PENDING", taille: "1.0 MB", dateUpload: "2025-06-07", commentaire: "Vérification en cours" },
+    ],
+    reviewer: "Admin Oumar", reviewDate: "2025-06-08", decisionDate: "", rejectionReason: "", reviewNotes: "Score de risque moyen-élevé. CNI recto vérifiée. En attente de confirmation verso. Investigation complémentaire en cours.", complianceFlags: ["Score risque > 60", "Compte précédemment suspendu"],
+  },
+  {
+    id: "KYC-006", userId: "USR-011", userName: "Abdoulaye Bah", currentLevel: "Tier 1", requestedLevel: "Tier 2", status: "APPROVED", submittedAt: "2025-06-04", documents: ["CNI recto/verso", "Selfie biométrique"], riskScore: 8,
+    detailedDocuments: [
+      { nom: "CNI recto", type: "CNI", statut: "VERIFIED", taille: "1.1 MB", dateUpload: "2025-06-04", commentaire: "Document valide et lisible" },
+      { nom: "CNI verso", type: "CNI", statut: "VERIFIED", taille: "0.9 MB", dateUpload: "2025-06-04", commentaire: "Adresse confirmée" },
+      { nom: "Selfie biométrique", type: "SELFIE", statut: "VERIFIED", taille: "1.9 MB", dateUpload: "2025-06-04", commentaire: "Correspondance faciale confirmée (98.5%)" },
+    ],
+    reviewer: "Admin Fatoumata", reviewDate: "2025-06-05", decisionDate: "2025-06-05", rejectionReason: "", reviewNotes: "Dossier complet. Score de risque très faible. Biométrie validée. Approbation recommandée.", complianceFlags: [],
+  },
+  {
+    id: "KYC-007", userId: "USR-002", userName: "Fatoumata Traoré", currentLevel: "Tier 1", requestedLevel: "Tier 2", status: "IN_REVIEW", submittedAt: "2025-06-09", documents: ["CNI recto/verso", "Selfie biométrique"], riskScore: 22,
+    detailedDocuments: [
+      { nom: "CNI recto", type: "CNI", statut: "VERIFIED", taille: "1.0 MB", dateUpload: "2025-06-09", commentaire: "Document valide" },
+      { nom: "CNI verso", type: "CNI", statut: "VERIFIED", taille: "0.8 MB", dateUpload: "2025-06-09", commentaire: "Adresse confirmée" },
+      { nom: "Selfie biométrique", type: "SELFIE", statut: "PENDING", taille: "2.0 MB", dateUpload: "2025-06-09", commentaire: "Vérification biométrique en cours" },
+    ],
+    reviewer: "Admin Oumar", reviewDate: "2025-06-10", decisionDate: "", rejectionReason: "", reviewNotes: "CNI vérifiée. En attente du résultat Smile Identity pour le selfie biométrique.", complianceFlags: [],
+  },
+  {
+    id: "KYC-008", userId: "USR-006", userName: "Mariam Konaté", currentLevel: "Tier 2", requestedLevel: "Tier 3", status: "PENDING", submittedAt: "2025-06-10", documents: ["CNI recto/verso", "Selfie biométrique", "Justificatif revenus", "Vidéo"], riskScore: 5,
+    detailedDocuments: [
+      { nom: "CNI recto", type: "CNI", statut: "PENDING", taille: "1.2 MB", dateUpload: "2025-06-10", commentaire: "" },
+      { nom: "CNI verso", type: "CNI", statut: "PENDING", taille: "0.9 MB", dateUpload: "2025-06-10", commentaire: "" },
+      { nom: "Selfie biométrique", type: "SELFIE", statut: "PENDING", taille: "2.2 MB", dateUpload: "2025-06-10", commentaire: "" },
+      { nom: "Justificatif de revenus", type: "REVENUE", statut: "PENDING", taille: "3.5 MB", dateUpload: "2025-06-10", commentaire: "" },
+      { nom: "Vidéo de présentation", type: "VIDEO", statut: "PENDING", taille: "15.2 MB", dateUpload: "2025-06-10", commentaire: "" },
+    ],
+    reviewer: "", reviewDate: "", decisionDate: "", rejectionReason: "", reviewNotes: "", complianceFlags: ["Tier 3 — vérification complète requise"],
+  },
 ]
 
 export const kycLevels = [

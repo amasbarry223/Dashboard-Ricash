@@ -64,3 +64,34 @@ Stage Summary:
 - Document summary counters in Profil tab
 - Float health warnings with visual indicators
 - All lint checks pass, dev server compiles successfully
+
+---
+Task ID: 3
+Agent: Main Agent
+Task: Redesign KYC & Conformité - Replace dialog with detail page
+
+Work Log:
+- Extended KYCRequest interface with new fields: detailedDocuments (KYCDocument[]), reviewer, reviewDate, decisionDate, rejectionReason, reviewNotes, complianceFlags
+- Added KYCDocumentStatus type ("VERIFIED" | "PENDING" | "REJECTED") and KYCDocument interface
+- Updated all 8 KYC requests with rich detailed data (document statuses, reviewer info, review notes, compliance flags)
+- Removed Dialog-based KYC detail view entirely
+- Created KYCDetailPage component as inline page (pattern: selectedRequestId → detail page)
+- Detail page features:
+  - Gradient hero header (sky-to-blue for in-progress, emerald for approved, red for rejected)
+  - Level transition bar (Current → Requested) with visual separator
+  - 4 stat cards: Risk Score, Documents count, Reviewer, Decision Date
+  - 4 tabs: Documents, Utilisateur, Revue & Notes, Plafonds
+  - Documents tab: summary counters, full table with type/status/size/date/comment columns
+  - Utilisateur tab: user profile card (linked to User data), risk assessment with progress bar, compliance flags, rejection reason
+  - Revue & Notes tab: review timeline (submission → assignment → decision), notes display, add note textarea for actionable requests
+  - Plafonds tab: side-by-side current vs requested level comparison with highlighted limits
+  - 2 modals: Approve (with risk warning), Reject (with mandatory reason textarea)
+- Updated list page: modern stat cards with icon bgs, responsive table + mobile card grid, improved filter bar
+- All lint checks pass, dev server compiles successfully
+
+Stage Summary:
+- KYC detail changed from Dialog to full page with rich content
+- 4 tabs with documents, user profile, review timeline, and limit comparison
+- Extended mock data with detailed documents, reviewers, and compliance flags
+- Responsive layout: desktop table + mobile cards
+- Approve/Reject modals with proper validation
