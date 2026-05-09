@@ -14,8 +14,13 @@ import {
   Eye,
   Wallet,
   Hash,
+  ArrowUpDown,
+  ChevronUp,
+  ChevronDown,
+  Download,
+  FilterX,
 } from "lucide-react"
-import { Card, CardContent } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -35,18 +40,17 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
-import { Separator } from "@/components/ui/separator"
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 import {
   transactions,
   type Transaction,
   type TransactionType,
   type TransactionStatus,
 } from "@/lib/mock-data"
+import { TransactionDetailPage } from "./transaction-detail-page"
 
 /* ─── Helpers ──────────────────────────────────────────────────────────────── */
 
@@ -54,57 +58,46 @@ function formatXOF(value: number): string {
   return new Intl.NumberFormat("fr-FR").format(value) + " XOF"
 }
 
-function formatDate(dateStr: string): string {
-  const [datePart, timePart] = dateStr.split(" ")
-  const [year, month, day] = datePart.split("-")
-  const months = [
-    "janv.", "févr.", "mars", "avr.", "mai", "juin",
-    "juil.", "août", "sept.", "oct.", "nov.", "déc.",
-  ]
-  const monthName = months[parseInt(month, 10) - 1]
-  return `${parseInt(day, 10)} ${monthName} ${year} à ${timePart}`
-}
-
 /* ─── Badge Configs ────────────────────────────────────────────────────────── */
 
 const typeConfig: Record<TransactionType, { label: string; className: string }> = {
   DEPOT: {
     label: "Dépôt",
-    className: "bg-emerald-100 text-emerald-800 border-emerald-200 dark:bg-emerald-900/40 dark:text-emerald-300 dark:border-emerald-800",
+    className: "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800",
   },
   RETRAIT: {
     label: "Retrait",
-    className: "bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-900/40 dark:text-amber-300 dark:border-amber-800",
+    className: "bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-950 dark:text-orange-300 dark:border-orange-800",
   },
   TRANSFERT: {
     label: "Transfert",
-    className: "bg-teal-100 text-teal-800 border-teal-200 dark:bg-teal-900/40 dark:text-teal-300 dark:border-teal-800",
+    className: "bg-teal-50 text-teal-700 border-teal-200 dark:bg-teal-950 dark:text-teal-300 dark:border-teal-800",
   },
   PAIEMENT: {
     label: "Paiement",
-    className: "bg-purple-100 text-purple-800 border-purple-200 dark:bg-purple-900/40 dark:text-purple-300 dark:border-purple-800",
+    className: "bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-950 dark:text-purple-300 dark:border-purple-800",
   },
 }
 
 const statusConfig: Record<TransactionStatus, { label: string; className: string; icon: React.ElementType }> = {
   COMPLETED: {
     label: "Réussi",
-    className: "bg-emerald-100 text-emerald-800 border-emerald-200 dark:bg-emerald-900/40 dark:text-emerald-300 dark:border-emerald-800",
+    className: "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800",
     icon: CheckCircle,
   },
   PENDING: {
     label: "En attente",
-    className: "bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-yellow-900/40 dark:text-yellow-300 dark:border-yellow-800",
+    className: "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950 dark:text-amber-300 dark:border-amber-800",
     icon: Clock,
   },
   FAILED: {
     label: "Échoué",
-    className: "bg-red-100 text-red-800 border-red-200 dark:bg-red-900/40 dark:text-red-300 dark:border-red-800",
+    className: "bg-red-50 text-red-700 border-red-200 dark:bg-red-950 dark:text-red-300 dark:border-red-800",
     icon: XCircle,
   },
   CANCELLED: {
     label: "Annulé",
-    className: "bg-gray-100 text-gray-600 border-gray-200 dark:bg-gray-800/40 dark:text-gray-400 dark:border-gray-700",
+    className: "bg-gray-100 text-gray-600 border-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700",
     icon: Ban,
   },
 }
@@ -129,110 +122,25 @@ function StatusBadge({ status }: { status: TransactionStatus }) {
   )
 }
 
-/* ─── Transaction Detail Dialog ────────────────────────────────────────────── */
+/* ─── Sort types ─────────────────────────────────────────────────────────────── */
+type SortField = "reference" | "type" | "montant" | "frais" | "statut" | "date"
+type SortDirection = "asc" | "desc"
 
-function TransactionDetailDialog({
-  transaction,
-  open,
-  onOpenChange,
+function SortableHeader({
+  label, field, sortField, sortDirection, onSort, className,
 }: {
-  transaction: Transaction | null
-  open: boolean
-  onOpenChange: (open: boolean) => void
+  label: string; field: SortField; sortField: SortField; sortDirection: SortDirection; onSort: (field: SortField) => void; className?: string
 }) {
-  if (!transaction) return null
-
+  const isActive = sortField === field
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Hash className="size-5 text-primary" />
-            Détails de la Transaction
-          </DialogTitle>
-        </DialogHeader>
-        <div className="space-y-4">
-          {/* Reference & Status */}
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs text-muted-foreground">Référence</p>
-              <p className="text-sm font-mono font-semibold">{transaction.reference}</p>
-            </div>
-            <StatusBadge status={transaction.statut} />
-          </div>
-
-          <Separator />
-
-          {/* Type & Method */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <p className="text-xs text-muted-foreground">Type</p>
-              <TypeBadge type={transaction.type} />
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground">Méthode</p>
-              <p className="text-sm font-medium">{transaction.methode}</p>
-            </div>
-          </div>
-
-          <Separator />
-
-          {/* Amount & Fees */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <p className="text-xs text-muted-foreground">Montant</p>
-              <p className="text-lg font-bold text-emerald-700 dark:text-emerald-400">
-                {formatXOF(transaction.montant)}
-              </p>
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground">Frais</p>
-              <p className="text-lg font-semibold text-muted-foreground">
-                {transaction.frais === 0 ? "Gratuit" : formatXOF(transaction.frais)}
-              </p>
-            </div>
-          </div>
-
-          <Separator />
-
-          {/* Sender & Receiver */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <p className="text-xs text-muted-foreground">Expéditeur</p>
-              <p className="text-sm font-medium">{transaction.expediteur}</p>
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground">Destinataire</p>
-              <p className="text-sm font-medium">{transaction.destinataire}</p>
-            </div>
-          </div>
-
-          <Separator />
-
-          {/* Date & ID */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <p className="text-xs text-muted-foreground">Date</p>
-              <p className="text-sm">{formatDate(transaction.date)}</p>
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground">ID Interne</p>
-              <p className="text-sm font-mono">{transaction.id}</p>
-            </div>
-          </div>
-
-          {/* Total */}
-          <div className="rounded-lg bg-emerald-50 dark:bg-emerald-950/30 p-3 border border-emerald-200 dark:border-emerald-800">
-            <div className="flex justify-between items-center">
-              <span className="text-sm font-medium text-emerald-800 dark:text-emerald-300">Total (Montant + Frais)</span>
-              <span className="text-lg font-bold text-emerald-700 dark:text-emerald-400">
-                {formatXOF(transaction.montant + transaction.frais)}
-              </span>
-            </div>
-          </div>
-        </div>
-      </DialogContent>
-    </Dialog>
+    <Button variant="ghost" size="sm" className={`-ml-3 h-8 gap-1 ${className || ""}`} onClick={() => onSort(field)}>
+      {label}
+      {isActive ? (
+        sortDirection === "asc" ? <ChevronUp className="size-3.5" /> : <ChevronDown className="size-3.5" />
+      ) : (
+        <ArrowUpDown className="size-3.5 opacity-40" />
+      )}
+    </Button>
   )
 }
 
@@ -246,21 +154,28 @@ export function TransactionsPage() {
   const [statusFilter, setStatusFilter] = useState<string>("all")
   const [dateFilter, setDateFilter] = useState<string>("all")
   const [currentPage, setCurrentPage] = useState(1)
-  const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null)
-  const [detailOpen, setDetailOpen] = useState(false)
+  const [sortField, setSortField] = useState<SortField>("date")
+  const [sortDirection, setSortDirection] = useState<SortDirection>("desc")
+  const [selectedTransactionId, setSelectedTransactionId] = useState<string | null>(null)
 
-  // Filter transactions
+  // Sort handler
+  const handleSort = (field: SortField) => {
+    setSortDirection((prev) => sortField === field && prev === "asc" ? "desc" : "asc")
+    setSortField(field)
+  }
+
+  // Filter & sort transactions (must be before conditional return — hooks order)
   const filtered = useMemo(() => {
-    return transactions.filter((tx) => {
-      if (searchQuery && !tx.reference.toLowerCase().includes(searchQuery.toLowerCase())) {
-        return false
+    const result = transactions.filter((tx) => {
+      if (searchQuery) {
+        const query = searchQuery.toLowerCase().trim()
+        const searchable = [
+          tx.reference, tx.expediteur, tx.destinataire, tx.id,
+        ].join(" ").toLowerCase()
+        if (!searchable.includes(query)) return false
       }
-      if (typeFilter !== "all" && tx.type !== typeFilter) {
-        return false
-      }
-      if (statusFilter !== "all" && tx.statut !== statusFilter) {
-        return false
-      }
+      if (typeFilter !== "all" && tx.type !== typeFilter) return false
+      if (statusFilter !== "all" && tx.statut !== statusFilter) return false
       if (dateFilter !== "all") {
         const txDate = new Date(tx.date.replace(" ", "T"))
         const now = new Date()
@@ -275,7 +190,27 @@ export function TransactionsPage() {
       }
       return true
     })
-  }, [searchQuery, typeFilter, statusFilter, dateFilter])
+
+    result.sort((a, b) => {
+      let cmp = 0
+      switch (sortField) {
+        case "reference": cmp = a.reference.localeCompare(b.reference); break
+        case "type": cmp = a.type.localeCompare(b.type); break
+        case "montant": cmp = a.montant - b.montant; break
+        case "frais": cmp = a.frais - b.frais; break
+        case "statut": cmp = a.statut.localeCompare(b.statut); break
+        case "date": cmp = new Date(a.date.replace(" ", "T")).getTime() - new Date(b.date.replace(" ", "T")).getTime(); break
+      }
+      return sortDirection === "asc" ? cmp : -cmp
+    })
+
+    return result
+  }, [searchQuery, typeFilter, statusFilter, dateFilter, sortField, sortDirection])
+
+  // If a transaction is selected, show detail page (after all hooks)
+  if (selectedTransactionId) {
+    return <TransactionDetailPage transactionId={selectedTransactionId} onBack={() => setSelectedTransactionId(null)} />
+  }
 
   // Pagination
   const totalPages = Math.max(1, Math.ceil(filtered.length / ITEMS_PER_PAGE))
@@ -295,65 +230,74 @@ export function TransactionsPage() {
   const totalMontant = paginated.reduce((sum, tx) => sum + tx.montant, 0)
   const totalFrais = paginated.reduce((sum, tx) => sum + tx.frais, 0)
 
-  // Open detail dialog
-  const openDetail = (tx: Transaction) => {
-    setSelectedTransaction(tx)
-    setDetailOpen(true)
+  // Pagination helpers
+  const getPageNumbers = (): (number | "...")[] => {
+    const pages: (number | "...")[] = []
+    if (totalPages <= 5) { for (let i = 1; i <= totalPages; i++) pages.push(i) }
+    else {
+      pages.push(1)
+      if (safeCurrentPage > 3) pages.push("...")
+      const start = Math.max(2, safeCurrentPage - 1)
+      const end = Math.min(totalPages - 1, safeCurrentPage + 1)
+      for (let i = start; i <= end; i++) pages.push(i)
+      if (safeCurrentPage < totalPages - 2) pages.push("...")
+      pages.push(totalPages)
+    }
+    return pages
   }
+
+  const startIndex = (safeCurrentPage - 1) * ITEMS_PER_PAGE + 1
+  const endIndex = Math.min(safeCurrentPage * ITEMS_PER_PAGE, filtered.length)
+  const hasActiveFilters = searchQuery !== "" || typeFilter !== "all" || statusFilter !== "all" || dateFilter !== "all"
 
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div className="size-10 rounded-lg bg-primary/10 flex items-center justify-center">
-            <ArrowLeftRight className="size-5 text-primary" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold">Gestion des Transactions</h1>
-            <p className="text-sm text-muted-foreground">Suivi et gestion de toutes les transactions</p>
-          </div>
+        <div>
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Gestion des Transactions</h1>
+          <p className="text-muted-foreground mt-1">Suivi et gestion de toutes les transactions de la plateforme RICASH</p>
+        </div>
+        <div className="flex items-center gap-2 shrink-0 self-start sm:self-auto">
+          <Button variant="outline" size="sm" className="gap-2">
+            <Download className="size-4" />
+            Exporter
+          </Button>
         </div>
       </div>
 
       {/* Summary Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="size-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                <TrendingUp className="size-5 text-primary" />
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">Total Transactions</p>
-                <p className="text-2xl font-bold">{new Intl.NumberFormat("fr-FR").format(totalCount)}</p>
-              </div>
+          <CardContent className="p-4 flex items-center gap-3">
+            <div className="size-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+              <TrendingUp className="size-5 text-primary" />
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground uppercase tracking-wider">Total Transactions</p>
+              <p className="text-2xl font-bold">{new Intl.NumberFormat("fr-FR").format(totalCount)}</p>
             </div>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="size-10 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
-                <Wallet className="size-5 text-emerald-600 dark:text-emerald-400" />
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">Volume Total</p>
-                <p className="text-2xl font-bold">{formatXOF(totalVolume)}</p>
-              </div>
+          <CardContent className="p-4 flex items-center gap-3">
+            <div className="size-10 rounded-xl bg-emerald-100 dark:bg-emerald-950 flex items-center justify-center shrink-0">
+              <Wallet className="size-5 text-emerald-600 dark:text-emerald-400" />
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground uppercase tracking-wider">Volume Total</p>
+              <p className="text-2xl font-bold">{formatXOF(totalVolume)}</p>
             </div>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="size-10 rounded-lg bg-teal-100 dark:bg-teal-900/30 flex items-center justify-center">
-                <CheckCircle className="size-5 text-teal-600 dark:text-teal-400" />
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">Taux de Succès</p>
-                <p className="text-2xl font-bold">{successRate}%</p>
-              </div>
+          <CardContent className="p-4 flex items-center gap-3">
+            <div className="size-10 rounded-xl bg-teal-100 dark:bg-teal-950 flex items-center justify-center shrink-0">
+              <CheckCircle className="size-5 text-teal-600 dark:text-teal-400" />
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground uppercase tracking-wider">Taux de Succès</p>
+              <p className="text-2xl font-bold">{successRate}%</p>
             </div>
           </CardContent>
         </Card>
@@ -362,100 +306,115 @@ export function TransactionsPage() {
       {/* Filter Bar */}
       <Card>
         <CardContent className="p-4">
-          <div className="flex flex-col sm:flex-row gap-3">
-            <div className="relative flex-1">
+          <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
+            <div className="relative flex-1 w-full sm:w-auto">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
               <Input
-                placeholder="Rechercher par référence..."
+                placeholder="Rechercher par référence, expéditeur, destinataire..."
                 value={searchQuery}
-                onChange={(e) => {
-                  setSearchQuery(e.target.value)
-                  setCurrentPage(1)
-                }}
+                onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1) }}
                 className="pl-9"
               />
             </div>
-            <Select
-              value={typeFilter}
-              onValueChange={(v) => {
-                setTypeFilter(v)
-                setCurrentPage(1)
-              }}
-            >
-              <SelectTrigger className="w-full sm:w-[160px]">
-                <SelectValue placeholder="Type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Tous les types</SelectItem>
-                <SelectItem value="DEPOT">Dépôt</SelectItem>
-                <SelectItem value="RETRAIT">Retrait</SelectItem>
-                <SelectItem value="TRANSFERT">Transfert</SelectItem>
-                <SelectItem value="PAIEMENT">Paiement</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select
-              value={statusFilter}
-              onValueChange={(v) => {
-                setStatusFilter(v)
-                setCurrentPage(1)
-              }}
-            >
-              <SelectTrigger className="w-full sm:w-[160px]">
-                <SelectValue placeholder="Statut" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Tous les statuts</SelectItem>
-                <SelectItem value="COMPLETED">Réussi</SelectItem>
-                <SelectItem value="PENDING">En attente</SelectItem>
-                <SelectItem value="FAILED">Échoué</SelectItem>
-                <SelectItem value="CANCELLED">Annulé</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select
-              value={dateFilter}
-              onValueChange={(v) => {
-                setDateFilter(v)
-                setCurrentPage(1)
-              }}
-            >
-              <SelectTrigger className="w-full sm:w-[160px]">
-                <SelectValue placeholder="Période" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Toutes les dates</SelectItem>
-                <SelectItem value="today">Aujourd&apos;hui</SelectItem>
-                <SelectItem value="week">7 derniers jours</SelectItem>
-                <SelectItem value="month">Ce mois</SelectItem>
-              </SelectContent>
-            </Select>
+            <div className="flex gap-2 w-full sm:w-auto flex-wrap">
+              <Select value={typeFilter} onValueChange={(v) => { setTypeFilter(v); setCurrentPage(1) }}>
+                <SelectTrigger className="w-full sm:w-[150px]"><SelectValue placeholder="Type" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Tous les types</SelectItem>
+                  <SelectItem value="DEPOT">Dépôt</SelectItem>
+                  <SelectItem value="RETRAIT">Retrait</SelectItem>
+                  <SelectItem value="TRANSFERT">Transfert</SelectItem>
+                  <SelectItem value="PAIEMENT">Paiement</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); setCurrentPage(1) }}>
+                <SelectTrigger className="w-full sm:w-[150px]"><SelectValue placeholder="Statut" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Tous les statuts</SelectItem>
+                  <SelectItem value="COMPLETED">Réussi</SelectItem>
+                  <SelectItem value="PENDING">En attente</SelectItem>
+                  <SelectItem value="FAILED">Échoué</SelectItem>
+                  <SelectItem value="CANCELLED">Annulé</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={dateFilter} onValueChange={(v) => { setDateFilter(v); setCurrentPage(1) }}>
+                <SelectTrigger className="w-full sm:w-[150px]"><SelectValue placeholder="Période" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Toutes les dates</SelectItem>
+                  <SelectItem value="today">Aujourd&apos;hui</SelectItem>
+                  <SelectItem value="week">7 derniers jours</SelectItem>
+                  <SelectItem value="month">Ce mois</SelectItem>
+                </SelectContent>
+              </Select>
+              {hasActiveFilters && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="ghost" size="icon" className="shrink-0 text-muted-foreground hover:text-foreground" onClick={() => { setSearchQuery(""); setTypeFilter("all"); setStatusFilter("all"); setDateFilter("all"); setCurrentPage(1) }}>
+                      <FilterX className="size-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Réinitialiser les filtres</TooltipContent>
+                </Tooltip>
+              )}
+            </div>
           </div>
         </CardContent>
       </Card>
 
       {/* Data Table */}
       <Card>
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="text-lg">Liste des Transactions</CardTitle>
+              <CardDescription className="mt-1">
+                {filtered.length} transaction{filtered.length !== 1 ? "s" : ""} trouvé{filtered.length !== 1 ? "s" : ""}
+              </CardDescription>
+            </div>
+          </div>
+        </CardHeader>
         <CardContent className="p-0">
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
-                <TableRow className="bg-muted/50">
-                  <TableHead className="font-semibold">Référence</TableHead>
-                  <TableHead className="font-semibold">Type</TableHead>
-                  <TableHead className="font-semibold text-right">Montant</TableHead>
-                  <TableHead className="font-semibold text-right">Frais</TableHead>
-                  <TableHead className="font-semibold">Expéditeur</TableHead>
-                  <TableHead className="font-semibold">Destinataire</TableHead>
-                  <TableHead className="font-semibold">Statut</TableHead>
-                  <TableHead className="font-semibold">Date</TableHead>
-                  <TableHead className="font-semibold">Méthode</TableHead>
-                  <TableHead className="font-semibold w-12" />
+                <TableRow className="bg-muted/50 hover:bg-muted/50">
+                  <TableHead className="w-[130px]">
+                    <SortableHeader label="Référence" field="reference" sortField={sortField} sortDirection={sortDirection} onSort={handleSort} />
+                  </TableHead>
+                  <TableHead>
+                    <SortableHeader label="Type" field="type" sortField={sortField} sortDirection={sortDirection} onSort={handleSort} />
+                  </TableHead>
+                  <TableHead className="text-right">
+                    <SortableHeader label="Montant" field="montant" sortField={sortField} sortDirection={sortDirection} onSort={handleSort} className="justify-end" />
+                  </TableHead>
+                  <TableHead className="hidden sm:table-cell text-right">
+                    <SortableHeader label="Frais" field="frais" sortField={sortField} sortDirection={sortDirection} onSort={handleSort} className="justify-end" />
+                  </TableHead>
+                  <TableHead className="hidden md:table-cell">Expéditeur</TableHead>
+                  <TableHead className="hidden md:table-cell">Destinataire</TableHead>
+                  <TableHead>
+                    <SortableHeader label="Statut" field="statut" sortField={sortField} sortDirection={sortDirection} onSort={handleSort} />
+                  </TableHead>
+                  <TableHead className="hidden lg:table-cell">
+                    <SortableHeader label="Date" field="date" sortField={sortField} sortDirection={sortDirection} onSort={handleSort} />
+                  </TableHead>
+                  <TableHead className="hidden lg:table-cell">Méthode</TableHead>
+                  <TableHead className="w-[60px] text-center">Détail</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {paginated.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={10} className="h-24 text-center text-muted-foreground">
-                      Aucune transaction trouvée
+                    <TableCell colSpan={10} className="h-32 text-center">
+                      <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                        <Wallet className="size-8 opacity-40" />
+                        <p className="text-sm">Aucune transaction trouvée pour ces critères.</p>
+                        {hasActiveFilters && (
+                          <Button variant="link" size="sm" onClick={() => { setSearchQuery(""); setTypeFilter("all"); setStatusFilter("all"); setDateFilter("all"); setCurrentPage(1) }}>
+                            Réinitialiser les filtres
+                          </Button>
+                        )}
+                      </div>
                     </TableCell>
                   </TableRow>
                 ) : (
@@ -464,35 +423,37 @@ export function TransactionsPage() {
                       <TableRow
                         key={tx.id}
                         className="cursor-pointer hover:bg-muted/30 transition-colors"
-                        onClick={() => openDetail(tx)}
+                        onClick={() => setSelectedTransactionId(tx.id)}
                       >
                         <TableCell className="font-mono text-xs">{tx.reference}</TableCell>
                         <TableCell>
                           <TypeBadge type={tx.type} />
                         </TableCell>
-                        <TableCell className="text-right font-semibold">{formatXOF(tx.montant)}</TableCell>
-                        <TableCell className="text-right text-muted-foreground">
+                        <TableCell className="text-right font-semibold tabular-nums text-sm">{formatXOF(tx.montant)}</TableCell>
+                        <TableCell className="hidden sm:table-cell text-right text-muted-foreground text-sm">
                           {tx.frais === 0 ? "—" : formatXOF(tx.frais)}
                         </TableCell>
-                        <TableCell className="max-w-[120px] truncate">{tx.expediteur}</TableCell>
-                        <TableCell className="max-w-[120px] truncate">{tx.destinataire}</TableCell>
+                        <TableCell className="hidden md:table-cell max-w-[120px] truncate text-sm">{tx.expediteur}</TableCell>
+                        <TableCell className="hidden md:table-cell max-w-[120px] truncate text-sm">{tx.destinataire}</TableCell>
                         <TableCell>
                           <StatusBadge status={tx.statut} />
                         </TableCell>
-                        <TableCell className="text-xs whitespace-nowrap">{tx.date}</TableCell>
-                        <TableCell className="text-xs">{tx.methode}</TableCell>
-                        <TableCell>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-7 w-7 p-0"
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              openDetail(tx)
-                            }}
-                          >
-                            <Eye className="size-3.5 text-muted-foreground" />
-                          </Button>
+                        <TableCell className="hidden lg:table-cell text-xs whitespace-nowrap text-muted-foreground">{tx.date}</TableCell>
+                        <TableCell className="hidden lg:table-cell text-xs">{tx.methode}</TableCell>
+                        <TableCell className="text-center">
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="size-8 text-muted-foreground hover:text-foreground"
+                                onClick={(e) => { e.stopPropagation(); setSelectedTransactionId(tx.id) }}
+                              >
+                                <Eye className="size-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Voir les détails</TooltipContent>
+                          </Tooltip>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -500,13 +461,13 @@ export function TransactionsPage() {
                     <TableRow className="bg-muted/40 font-semibold border-t-2">
                       <TableCell className="text-xs">Total (page)</TableCell>
                       <TableCell>—</TableCell>
-                      <TableCell className="text-right">{formatXOF(totalMontant)}</TableCell>
-                      <TableCell className="text-right">{formatXOF(totalFrais)}</TableCell>
+                      <TableCell className="text-right tabular-nums">{formatXOF(totalMontant)}</TableCell>
+                      <TableCell className="hidden sm:table-cell text-right tabular-nums">{formatXOF(totalFrais)}</TableCell>
+                      <TableCell className="hidden md:table-cell">—</TableCell>
+                      <TableCell className="hidden md:table-cell">—</TableCell>
                       <TableCell>—</TableCell>
-                      <TableCell>—</TableCell>
-                      <TableCell>—</TableCell>
-                      <TableCell>—</TableCell>
-                      <TableCell>—</TableCell>
+                      <TableCell className="hidden lg:table-cell">—</TableCell>
+                      <TableCell className="hidden lg:table-cell">—</TableCell>
                       <TableCell>—</TableCell>
                     </TableRow>
                   </>
@@ -516,55 +477,32 @@ export function TransactionsPage() {
           </div>
 
           {/* Pagination */}
-          {totalPages > 1 && (
-            <div className="flex items-center justify-between px-4 py-3 border-t">
-              <p className="text-xs text-muted-foreground">
-                Affichage {(safeCurrentPage - 1) * ITEMS_PER_PAGE + 1}–
-                {Math.min(safeCurrentPage * ITEMS_PER_PAGE, filtered.length)} sur{" "}
-                {filtered.length} transactions
+          {filtered.length > 0 && (
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 border-t px-4 py-3">
+              <p className="text-sm text-muted-foreground">
+                {startIndex}–{endIndex} sur {filtered.length} transaction{filtered.length !== 1 ? "s" : ""}
               </p>
               <div className="flex items-center gap-1">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-8 w-8 p-0"
-                  disabled={safeCurrentPage <= 1}
-                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                >
-                  <ChevronLeft className="size-4" />
+                <Button variant="outline" size="icon" className="size-8" disabled={safeCurrentPage <= 1} onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}>
+                  <ChevronLeft className="size-4" /><span className="sr-only">Précédent</span>
                 </Button>
-                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                  <Button
-                    key={page}
-                    variant={page === safeCurrentPage ? "default" : "outline"}
-                    size="sm"
-                    className="h-8 w-8 p-0"
-                    onClick={() => setCurrentPage(page)}
-                  >
-                    {page}
-                  </Button>
-                ))}
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-8 w-8 p-0"
-                  disabled={safeCurrentPage >= totalPages}
-                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                >
-                  <ChevronRight className="size-4" />
+                {getPageNumbers().map((page, idx) =>
+                  page === "..." ? (
+                    <span key={`ellipsis-${idx}`} className="px-2 text-muted-foreground text-sm">...</span>
+                  ) : (
+                    <Button key={page} variant={page === safeCurrentPage ? "default" : "outline"} size="icon" className={`size-8 ${page === safeCurrentPage ? "bg-emerald-600 hover:bg-emerald-700 text-white" : ""}`} onClick={() => setCurrentPage(page)}>
+                      {page}
+                    </Button>
+                  )
+                )}
+                <Button variant="outline" size="icon" className="size-8" disabled={safeCurrentPage >= totalPages} onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}>
+                  <ChevronRight className="size-4" /><span className="sr-only">Suivant</span>
                 </Button>
               </div>
             </div>
           )}
         </CardContent>
       </Card>
-
-      {/* Detail Dialog */}
-      <TransactionDetailDialog
-        transaction={selectedTransaction}
-        open={detailOpen}
-        onOpenChange={setDetailOpen}
-      />
     </div>
   )
 }
