@@ -33,12 +33,10 @@ export default function Home() {
   return (
     <SidebarProvider>
       <AppSidebar />
-      <SidebarInset className="gradient-mesh bg-dots">
+      <SidebarInset>
         <AppHeader />
-        <main className="flex-1 p-4 md:p-6 lg:p-8 overflow-auto">
-          <div key={currentPage} className="animate-fade-in">
-            <PageComponent />
-          </div>
+        <main className="flex-1 p-4 md:p-6 overflow-auto">
+          <PageComponent />
         </main>
       </SidebarInset>
     </SidebarProvider>
