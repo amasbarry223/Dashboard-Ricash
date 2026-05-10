@@ -15,17 +15,20 @@ import {
   Hash,
   BadgeCheck,
   X,
-  TrendingUp,
-  TrendingDown,
   Wallet,
   ArrowUpDown,
-  Filter,
   Plus,
   MoreHorizontal,
   ShieldCheck,
   Ban,
+  Download,
+  FilterX,
+  ChevronLeft,
+  ChevronRight,
+  ChevronUp,
+  ChevronDown,
 } from "lucide-react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import {
@@ -69,6 +72,11 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu"
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
+import {
   agents,
   type Agent,
   type AgentStatus,
@@ -85,6 +93,15 @@ function formatCompact(value: number): string {
   if (value >= 1000000) return `${(value / 1000000).toFixed(1)}M`
   if (value >= 1000) return `${(value / 1000).toFixed(0)}K`
   return value.toString()
+}
+
+const ITEMS_PER_PAGE = 8
+
+type SortField = "code" | "nom" | "statut" | "commerce" | "transactionsJour" | "volumeJour" | "performance"
+type SortDirection = "asc" | "desc"
+
+function getInitials(nom: string, prenom: string): string {
+  return `${prenom.charAt(0)}${nom.charAt(0)}`.toUpperCase()
 }
 
 /* ─── Badge Configs ────────────────────────────────────────────────────────── */
@@ -118,12 +135,11 @@ const statusConfig: Record<AgentStatus, { label: string; className: string; dotC
 
 function AgentStatusBadge({ status }: { status: AgentStatus }) {
   const config = statusConfig[status]
-  const Icon = config.icon
   return (
-    <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-semibold ${config.className}`}>
+    <Badge variant="outline" className={`gap-1.5 font-medium ${config.className}`}>
       <span className={`size-1.5 rounded-full ${config.dotClass}`} />
       {config.label}
-    </span>
+    </Badge>
   )
 }
 
@@ -132,7 +148,6 @@ function AgentStatusBadge({ status }: { status: AgentStatus }) {
 function StatCard({
   title,
   value,
-  subtitle,
   icon: Icon,
   trend,
   iconBg,
@@ -140,40 +155,54 @@ function StatCard({
 }: {
   title: string
   value: string | number
-  subtitle?: string
   icon: React.ElementType
-  trend?: { value: number; label: string }
+  trend?: string
   iconBg: string
   iconColor: string
 }) {
   return (
     <Card className="relative overflow-hidden">
-      <CardContent className="p-5">
-        <div className="flex items-start justify-between">
-          <div className="space-y-1.5">
+      <CardContent className="p-4 md:p-5">
+        <div className="flex items-center justify-between">
+          <div className="space-y-1">
             <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{title}</p>
             <p className="text-2xl font-bold tracking-tight">{value}</p>
-            {trend && (
-              <div className="flex items-center gap-1 text-xs">
-                {trend.value >= 0 ? (
-                  <TrendingUp className="size-3 text-emerald-600" />
-                ) : (
-                  <TrendingDown className="size-3 text-red-600" />
-                )}
-                <span className={trend.value >= 0 ? "text-emerald-600 font-semibold" : "text-red-600 font-semibold"}>
-                  {trend.value >= 0 ? "+" : ""}{trend.value}%
-                </span>
-                <span className="text-muted-foreground">{trend.label}</span>
-              </div>
-            )}
-            {subtitle && <p className="text-xs text-muted-foreground">{subtitle}</p>}
+            {trend && <p className="text-xs text-muted-foreground">{trend}</p>}
           </div>
-          <div className={`size-10 rounded-xl ${iconBg} flex items-center justify-center shrink-0`}>
+          <div className={`flex size-11 shrink-0 items-center justify-center rounded-xl ${iconBg}`}>
             <Icon className={`size-5 ${iconColor}`} />
           </div>
         </div>
       </CardContent>
     </Card>
+  )
+}
+
+function SortableHeader({
+  label,
+  field,
+  sortField,
+  sortDirection,
+  onSort,
+  className,
+}: {
+  label: string
+  field: SortField
+  sortField: SortField
+  sortDirection: SortDirection
+  onSort: (field: SortField) => void
+  className?: string
+}) {
+  const isActive = sortField === field
+  return (
+    <Button variant="ghost" size="sm" className={`-ml-3 h-8 gap-1 ${className || ""}`} onClick={() => onSort(field)}>
+      {label}
+      {isActive ? (
+        sortDirection === "asc" ? <ChevronUp className="size-3.5" /> : <ChevronDown className="size-3.5" />
+      ) : (
+        <ArrowUpDown className="size-3.5 opacity-40" />
+      )}
+    </Button>
   )
 }
 
@@ -318,7 +347,7 @@ function AgentTableRow({
         <div className="flex items-center gap-3">
           <Avatar className="size-9 border">
             <AvatarFallback className="bg-primary/10 text-primary font-bold text-xs">
-              {agent.prenom.charAt(0)}{agent.nom.charAt(0)}
+              {getInitials(agent.nom, agent.prenom)}
             </AvatarFallback>
           </Avatar>
           <div>
@@ -330,7 +359,7 @@ function AgentTableRow({
       <TableCell>
         <AgentStatusBadge status={agent.statut} />
       </TableCell>
-      <TableCell>
+      <TableCell className="hidden md:table-cell">
         <div className="space-y-0.5">
           <p className="text-sm font-medium">{agent.commerce}</p>
           <p className="text-xs text-muted-foreground flex items-center gap-1">
@@ -339,20 +368,20 @@ function AgentTableRow({
           </p>
         </div>
       </TableCell>
-      <TableCell className="text-right">
+      <TableCell className="hidden sm:table-cell text-right">
         <p className="text-sm font-bold tabular-nums">{agent.transactionsJour}</p>
         <p className="text-xs text-muted-foreground">tx/jour</p>
       </TableCell>
-      <TableCell className="text-right">
+      <TableCell className="hidden lg:table-cell text-right">
         <p className="text-sm font-bold tabular-nums text-emerald-700 dark:text-emerald-400">{formatCompact(agent.volumeJour)}</p>
         <p className="text-xs text-muted-foreground">XOF/jour</p>
       </TableCell>
-      <TableCell>
+      <TableCell className="hidden lg:table-cell">
         <div className="w-24">
           <FloatProgress actuel={agent.floatActuel} min={agent.floatMin} />
         </div>
       </TableCell>
-      <TableCell>
+      <TableCell className="hidden md:table-cell">
         <div className="flex items-center gap-1">
           <span className={`text-sm font-bold tabular-nums ${
             agent.performance > 90 ? "text-emerald-600 dark:text-emerald-400" :
@@ -398,79 +427,6 @@ function AgentTableRow({
         </DropdownMenu>
       </TableCell>
     </TableRow>
-  )
-}
-
-/* ─── Agent Card (Mobile) ──────────────────────────────────────────────────── */
-
-function AgentCard({
-  agent,
-  onViewDetail,
-}: {
-  agent: Agent
-  onViewDetail: (agent: Agent) => void
-}) {
-  return (
-    <Card className="hover:shadow-md transition-all cursor-pointer border" onClick={() => onViewDetail(agent)}>
-      <CardContent className="p-4">
-        <div className="flex items-start gap-3">
-          <Avatar className="size-11 border-2 shrink-0">
-            <AvatarFallback className="bg-primary/10 text-primary font-bold text-sm">
-              {agent.prenom.charAt(0)}{agent.nom.charAt(0)}
-            </AvatarFallback>
-          </Avatar>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-start justify-between gap-2">
-              <div className="min-w-0">
-                <h3 className="font-semibold text-sm truncate">{agent.prenom} {agent.nom}</h3>
-                <p className="text-xs text-muted-foreground font-mono">{agent.code}</p>
-              </div>
-              <AgentStatusBadge status={agent.statut} />
-            </div>
-
-            <div className="mt-2 space-y-1">
-              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                <Phone className="size-3" />
-                <span>{agent.telephone}</span>
-              </div>
-              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                <Store className="size-3" />
-                <span className="truncate">{agent.commerce}</span>
-              </div>
-              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                <MapPin className="size-3" />
-                <span className="truncate">{agent.localisation}</span>
-              </div>
-            </div>
-
-            <div className="mt-3">
-              <FloatProgress actuel={agent.floatActuel} min={agent.floatMin} />
-            </div>
-
-            <div className="mt-3 grid grid-cols-3 gap-2 text-center">
-              <div className="rounded-lg bg-muted/50 py-1.5">
-                <p className="text-[10px] text-muted-foreground">Commission</p>
-                <p className="text-xs font-bold">{agent.commission}%</p>
-              </div>
-              <div className="rounded-lg bg-muted/50 py-1.5">
-                <p className="text-[10px] text-muted-foreground">Tx/Jour</p>
-                <p className="text-xs font-bold">{agent.transactionsJour}</p>
-              </div>
-              <div className="rounded-lg bg-muted/50 py-1.5">
-                <p className="text-[10px] text-muted-foreground">Perf.</p>
-                <p className={`text-xs font-bold ${
-                  agent.performance > 90 ? "text-emerald-600" :
-                  agent.performance > 70 ? "text-amber-600" :
-                  agent.performance > 0 ? "text-red-600" : "text-muted-foreground"
-                }`}>
-                  {agent.performance > 0 ? `${agent.performance}%` : "—"}
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
   )
 }
 
@@ -558,6 +514,9 @@ function PendingAgentCard({
 export function AgentsPage() {
   const [searchQuery, setSearchQuery] = useState("")
   const [statusFilter, setStatusFilter] = useState<string>("all")
+  const [currentPage, setCurrentPage] = useState(1)
+  const [sortField, setSortField] = useState<SortField>("nom")
+  const [sortDirection, setSortDirection] = useState<SortDirection>("asc")
   const [approvalAgent, setApprovalAgent] = useState<Agent | null>(null)
   const [approvalOpen, setApprovalOpen] = useState(false)
   const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null)
@@ -566,29 +525,100 @@ export function AgentsPage() {
   const totalAgents = agents.length
   const activeAgents = agents.filter((a) => a.statut === "ACTIVE").length
   const pendingAgents = agents.filter((a) => a.statut === "PENDING").length
-  const suspendedAgents = agents.filter((a) => a.statut === "SUSPENDED").length
   const totalVolume = agents.reduce((s, a) => s + a.volumeJour, 0)
+  const lowFloatAgents = agents.filter((a) => a.statut === "ACTIVE" && a.floatActuel < a.floatMin).length
+  const activeRate = totalAgents > 0 ? ((activeAgents / totalAgents) * 100).toFixed(0) : "0"
 
   // Filter agents for "Tous les Agents" tab
   const filteredAgents = useMemo(() => {
-    return agents.filter((agent) => {
+    const filtered = agents.filter((agent) => {
       if (searchQuery) {
-        const q = searchQuery.toLowerCase()
-        const matchesSearch =
-          agent.code.toLowerCase().includes(q) ||
-          agent.nom.toLowerCase().includes(q) ||
-          agent.prenom.toLowerCase().includes(q) ||
-          agent.commerce.toLowerCase().includes(q) ||
-          agent.localisation.toLowerCase().includes(q)
-        if (!matchesSearch) return false
+        const q = searchQuery.toLowerCase().trim()
+        const searchable = [
+          agent.code,
+          agent.id,
+          agent.nom,
+          agent.prenom,
+          `${agent.prenom} ${agent.nom}`,
+          `${agent.nom} ${agent.prenom}`,
+          agent.commerce,
+          agent.localisation,
+          agent.telephone,
+          agent.email,
+        ].join(" ").toLowerCase()
+        if (!searchable.includes(q)) return false
       }
       if (statusFilter !== "all" && agent.statut !== statusFilter) return false
       return true
     })
-  }, [searchQuery, statusFilter])
+
+    filtered.sort((a, b) => {
+      let cmp = 0
+      switch (sortField) {
+        case "code": cmp = a.code.localeCompare(b.code); break
+        case "nom": cmp = `${a.prenom} ${a.nom}`.localeCompare(`${b.prenom} ${b.nom}`); break
+        case "statut": cmp = a.statut.localeCompare(b.statut); break
+        case "commerce": cmp = a.commerce.localeCompare(b.commerce); break
+        case "transactionsJour": cmp = a.transactionsJour - b.transactionsJour; break
+        case "volumeJour": cmp = a.volumeJour - b.volumeJour; break
+        case "performance": cmp = a.performance - b.performance; break
+      }
+      return sortDirection === "asc" ? cmp : -cmp
+    })
+
+    return filtered
+  }, [searchQuery, statusFilter, sortField, sortDirection])
+
+  const totalPages = Math.max(1, Math.ceil(filteredAgents.length / ITEMS_PER_PAGE))
+  const safeCurrentPage = Math.min(currentPage, totalPages)
+  const paginatedAgents = useMemo(() => {
+    const start = (safeCurrentPage - 1) * ITEMS_PER_PAGE
+    return filteredAgents.slice(start, start + ITEMS_PER_PAGE)
+  }, [filteredAgents, safeCurrentPage])
 
   // Pending agents
   const pendingAgentsList = agents.filter((a) => a.statut === "PENDING")
+
+  const handleSort = (field: SortField) => {
+    setSortDirection((prev) => sortField === field && prev === "asc" ? "desc" : "asc")
+    setSortField(field)
+  }
+
+  const handleSearchChange = (value: string) => {
+    setSearchQuery(value)
+    setCurrentPage(1)
+  }
+
+  const handleStatusChange = (value: string) => {
+    setStatusFilter(value)
+    setCurrentPage(1)
+  }
+
+  const resetFilters = () => {
+    setSearchQuery("")
+    setStatusFilter("all")
+    setCurrentPage(1)
+  }
+
+  const getPageNumbers = (): (number | "...")[] => {
+    const pages: (number | "...")[] = []
+    if (totalPages <= 5) {
+      for (let i = 1; i <= totalPages; i++) pages.push(i)
+    } else {
+      pages.push(1)
+      if (safeCurrentPage > 3) pages.push("...")
+      const start = Math.max(2, safeCurrentPage - 1)
+      const end = Math.min(totalPages - 1, safeCurrentPage + 1)
+      for (let i = start; i <= end; i++) pages.push(i)
+      if (safeCurrentPage < totalPages - 2) pages.push("...")
+      pages.push(totalPages)
+    }
+    return pages
+  }
+
+  const startIndex = (safeCurrentPage - 1) * ITEMS_PER_PAGE + 1
+  const endIndex = Math.min(safeCurrentPage * ITEMS_PER_PAGE, filteredAgents.length)
+  const hasActiveFilters = searchQuery !== "" || statusFilter !== "all"
 
   // If an agent is selected, show detail page
   if (selectedAgentId) {
@@ -610,54 +640,55 @@ export function AgentsPage() {
     <div className="space-y-6">
       {/* ─── Header ─────────────────────────────────────────────────────────── */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div className="flex items-center gap-3.5">
-          <div className="size-12 rounded-xl bg-primary/10 flex items-center justify-center">
-            <UserCog className="size-6 text-primary" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight">Gestion des Agents</h1>
-            <p className="text-sm text-muted-foreground">Gestion et suivi des agents RICASH</p>
-          </div>
+        <div>
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Gestion des Agents</h1>
+          <p className="text-muted-foreground mt-1">Supervisez les agents, leur float et les demandes d&apos;activation RICASH</p>
         </div>
-        <Button className="bg-emerald-600 hover:bg-emerald-700 text-white h-10">
-          <Plus className="size-4 mr-2" />
-          Nouvel Agent
-        </Button>
+        <div className="flex items-center gap-2 shrink-0 self-start sm:self-auto">
+          <Button variant="outline" size="sm" className="gap-2">
+            <Download className="size-4" />
+            Exporter
+          </Button>
+          <Button className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm gap-2">
+            <Plus className="size-4" />
+            Nouvel Agent
+          </Button>
+        </div>
       </div>
 
       {/* ─── Stat Cards ─────────────────────────────────────────────────────── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
-          title="Total Agents"
-          value={totalAgents}
+          title="Total"
+          value={totalAgents.toLocaleString("fr-FR")}
           icon={UserCog}
-          iconBg="bg-primary/10"
-          iconColor="text-primary"
-          trend={{ value: 3.1, label: "ce mois" }}
+          iconBg="bg-emerald-100 dark:bg-emerald-950"
+          iconColor="text-emerald-600 dark:text-emerald-400"
+          trend="Tous les agents"
         />
         <StatCard
           title="Actifs"
-          value={activeAgents}
+          value={activeAgents.toLocaleString("fr-FR")}
           icon={CheckCircle}
-          iconBg="bg-emerald-100 dark:bg-emerald-900/30"
+          iconBg="bg-emerald-100 dark:bg-emerald-950"
           iconColor="text-emerald-600 dark:text-emerald-400"
-          trend={{ value: 5.2, label: "ce mois" }}
+          trend={`${activeRate}% du parc`}
         />
         <StatCard
           title="En attente"
-          value={pendingAgents}
+          value={pendingAgents.toLocaleString("fr-FR")}
           icon={Clock}
-          iconBg="bg-amber-100 dark:bg-amber-900/30"
+          iconBg="bg-amber-100 dark:bg-amber-950"
           iconColor="text-amber-600 dark:text-amber-400"
-          subtitle="Approbation requise"
+          trend="Approbation requise"
         />
         <StatCard
-          title="Volume/jour"
-          value={formatCompact(totalVolume) + " XOF"}
+          title="Float bas"
+          value={lowFloatAgents.toLocaleString("fr-FR")}
           icon={Wallet}
-          iconBg="bg-teal-100 dark:bg-teal-900/30"
-          iconColor="text-teal-600 dark:text-teal-400"
-          trend={{ value: 8.4, label: "cette semaine" }}
+          iconBg="bg-red-100 dark:bg-red-950"
+          iconColor="text-red-600 dark:text-red-400"
+          trend={`${formatCompact(totalVolume)} XOF traités/jour`}
         />
       </div>
 
@@ -684,88 +715,139 @@ export function AgentsPage() {
           {/* Search & Filter */}
           <Card>
             <CardContent className="p-4">
-              <div className="flex flex-col sm:flex-row gap-3">
-                <div className="relative flex-1">
+              <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
+                <div className="relative flex-1 w-full sm:w-auto">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
                   <Input
-                    placeholder="Rechercher par nom, code, commerce, localisation..."
+                    placeholder="Rechercher par nom, code, téléphone, commerce..."
                     value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-9 h-10"
+                    onChange={(e) => handleSearchChange(e.target.value)}
+                    className="pl-9"
                   />
                 </div>
-                <Select
-                  value={statusFilter}
-                  onValueChange={setStatusFilter}
-                >
-                  <SelectTrigger className="w-full sm:w-[200px] h-10">
-                    <Filter className="size-4 mr-2 text-muted-foreground" />
-                    <SelectValue placeholder="Statut" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Tous les statuts</SelectItem>
-                    <SelectItem value="ACTIVE">Actif</SelectItem>
-                    <SelectItem value="PENDING">En attente</SelectItem>
-                    <SelectItem value="INACTIVE">Inactif</SelectItem>
-                    <SelectItem value="SUSPENDED">Suspendu</SelectItem>
-                  </SelectContent>
-                </Select>
+                <div className="flex gap-2 w-full sm:w-auto">
+                  <Select
+                    value={statusFilter}
+                    onValueChange={handleStatusChange}
+                  >
+                    <SelectTrigger className="w-full sm:w-[180px]">
+                      <SelectValue placeholder="Statut" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Tous les statuts</SelectItem>
+                      <SelectItem value="ACTIVE">Actif</SelectItem>
+                      <SelectItem value="PENDING">En attente</SelectItem>
+                      <SelectItem value="INACTIVE">Inactif</SelectItem>
+                      <SelectItem value="SUSPENDED">Suspendu</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {hasActiveFilters && (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button variant="ghost" size="icon" className="shrink-0 text-muted-foreground hover:text-foreground" onClick={resetFilters}>
+                          <FilterX className="size-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>Réinitialiser les filtres</TooltipContent>
+                    </Tooltip>
+                  )}
+                </div>
               </div>
             </CardContent>
           </Card>
 
-          {/* Desktop: Table View */}
-          {filteredAgents.length === 0 ? (
-            <Card>
-              <CardContent className="p-12 text-center">
-                <UserCog className="size-12 text-muted-foreground/50 mx-auto mb-3" />
-                <p className="font-medium text-muted-foreground">Aucun agent trouvé</p>
-                <p className="text-sm text-muted-foreground mt-1">Essayez de modifier vos critères de recherche</p>
-              </CardContent>
-            </Card>
-          ) : (
-            <>
-              {/* Desktop Table */}
-              <Card className="hidden lg:block">
-                <CardContent className="p-0">
-                  <Table>
-                    <TableHeader>
-                      <TableRow className="bg-muted/30">
-                        <TableHead className="font-semibold">Agent</TableHead>
-                        <TableHead className="font-semibold">Statut</TableHead>
-                        <TableHead className="font-semibold">Commerce</TableHead>
-                        <TableHead className="font-semibold text-right">Tx/Jour</TableHead>
-                        <TableHead className="font-semibold text-right">Volume</TableHead>
-                        <TableHead className="font-semibold">Float</TableHead>
-                        <TableHead className="font-semibold">Perf.</TableHead>
-                        <TableHead className="w-12"></TableHead>
+          <Card>
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-lg">Liste des Agents</CardTitle>
+                  <CardDescription className="mt-1">
+                    {filteredAgents.length} agent{filteredAgents.length !== 1 ? "s" : ""} trouvé{filteredAgents.length !== 1 ? "s" : ""}
+                  </CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="p-0">
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-muted/50 hover:bg-muted/50">
+                      <TableHead>
+                        <SortableHeader label="Agent" field="nom" sortField={sortField} sortDirection={sortDirection} onSort={handleSort} />
+                      </TableHead>
+                      <TableHead>
+                        <SortableHeader label="Statut" field="statut" sortField={sortField} sortDirection={sortDirection} onSort={handleSort} />
+                      </TableHead>
+                      <TableHead className="hidden md:table-cell">
+                        <SortableHeader label="Commerce" field="commerce" sortField={sortField} sortDirection={sortDirection} onSort={handleSort} />
+                      </TableHead>
+                      <TableHead className="hidden sm:table-cell text-right">
+                        <SortableHeader label="Tx/Jour" field="transactionsJour" sortField={sortField} sortDirection={sortDirection} onSort={handleSort} className="justify-end" />
+                      </TableHead>
+                      <TableHead className="hidden lg:table-cell text-right">
+                        <SortableHeader label="Volume" field="volumeJour" sortField={sortField} sortDirection={sortDirection} onSort={handleSort} className="justify-end" />
+                      </TableHead>
+                      <TableHead className="hidden lg:table-cell">Float</TableHead>
+                      <TableHead className="hidden md:table-cell">
+                        <SortableHeader label="Perf." field="performance" sortField={sortField} sortDirection={sortDirection} onSort={handleSort} />
+                      </TableHead>
+                      <TableHead className="w-[60px] text-center">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {paginatedAgents.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={8} className="h-32 text-center">
+                          <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                            <UserCog className="size-8 opacity-40" />
+                            <p className="text-sm">Aucun agent trouvé pour ces critères.</p>
+                            {hasActiveFilters && (
+                              <Button variant="link" size="sm" onClick={resetFilters}>
+                                Réinitialiser les filtres
+                              </Button>
+                            )}
+                          </div>
+                        </TableCell>
                       </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {filteredAgents.map((agent) => (
+                    ) : (
+                      paginatedAgents.map((agent) => (
                         <AgentTableRow
                           key={agent.id}
                           agent={agent}
                           onViewDetail={openDetail}
                         />
-                      ))}
-                    </TableBody>
-                  </Table>
-                </CardContent>
-              </Card>
-
-              {/* Mobile: Card Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 lg:hidden">
-                {filteredAgents.map((agent) => (
-                  <AgentCard
-                    key={agent.id}
-                    agent={agent}
-                    onViewDetail={openDetail}
-                  />
-                ))}
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
               </div>
-            </>
-          )}
+
+              {filteredAgents.length > 0 && (
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 border-t px-4 py-3">
+                  <p className="text-sm text-muted-foreground">
+                    {startIndex}–{endIndex} sur {filteredAgents.length} agent{filteredAgents.length !== 1 ? "s" : ""}
+                  </p>
+                  <div className="flex items-center gap-1">
+                    <Button variant="outline" size="icon" className="size-8" disabled={safeCurrentPage <= 1} onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}>
+                      <ChevronLeft className="size-4" /><span className="sr-only">Précédent</span>
+                    </Button>
+                    {getPageNumbers().map((page, idx) =>
+                      page === "..." ? (
+                        <span key={`ellipsis-${idx}`} className="px-2 text-muted-foreground text-sm">...</span>
+                      ) : (
+                        <Button key={page} variant={page === safeCurrentPage ? "default" : "outline"} size="icon" className={`size-8 ${page === safeCurrentPage ? "bg-emerald-600 hover:bg-emerald-700 text-white" : ""}`} onClick={() => setCurrentPage(page)}>
+                          {page}
+                        </Button>
+                      )
+                    )}
+                    <Button variant="outline" size="icon" className="size-8" disabled={safeCurrentPage >= totalPages} onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}>
+                      <ChevronRight className="size-4" /><span className="sr-only">Suivant</span>
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </TabsContent>
 
         {/* ─── Tab 2: Pending Approval ────────────────────────────────────── */}

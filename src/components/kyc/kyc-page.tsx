@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useCallback } from 'react'
 import {
   ShieldCheck,
   Clock,
@@ -10,13 +10,15 @@ import {
   Search,
   FileText,
   ArrowUpDown,
-  AlertTriangle,
   ChevronLeft,
   ChevronRight,
   ArrowDownToLine,
   ArrowUpFromLine,
   BadgeCheck,
-  Filter,
+  Download,
+  FilterX,
+  ChevronUp,
+  ChevronDown,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -37,29 +39,21 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from '@/components/ui/tabs'
-import { Progress } from '@/components/ui/progress'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Separator } from '@/components/ui/separator'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 
 import {
   kycRequests,
   kycLevels,
   type KYCStatus,
-  type KYCDocumentStatus,
+  type KYCLevel,
 } from '@/lib/mock-data'
 import { KYCDetailPage } from '@/components/kyc/kyc-detail-page'
+import { cn } from '@/lib/utils'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-
-function formatXOF(value: number): string {
-  return new Intl.NumberFormat('fr-FR').format(value) + ' XOF'
-}
 
 function formatDate(dateStr: string): string {
   if (!dateStr) return '—'
@@ -70,13 +64,35 @@ function formatDate(dateStr: string): string {
   })
 }
 
-// ─── Badge Components ─────────────────────────────────────────────────────────
+type StatusFilterValue = 'all' | 'ACTION_QUEUE' | KYCStatus
+
+const kycBadgeClass: Record<KYCLevel, string> = {
+  'Tier 0':
+    'bg-gray-100 text-gray-600 border-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700',
+  'Tier 1':
+    'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950 dark:text-amber-300 dark:border-amber-800',
+  'Tier 2':
+    'bg-teal-50 text-teal-700 border-teal-200 dark:bg-teal-950 dark:text-teal-300 dark:border-teal-800',
+  'Tier 3':
+    'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800',
+}
+
+function TierLevelBadge({ level }: { level: KYCLevel }) {
+  return (
+    <Badge variant="outline" className={cn('text-[11px] font-medium', kycBadgeClass[level])}>
+      {level}
+    </Badge>
+  )
+}
+
+// ─── Badges ─────────────────────────────────────────────────────────────────────
 
 function KYCStatusBadge({ status }: { status: KYCStatus }) {
   const config: Record<KYCStatus, { label: string; className: string; dotClass: string }> = {
     PENDING: {
       label: 'En attente',
-      className: 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950 dark:text-amber-300 dark:border-amber-800',
+      className:
+        'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950 dark:text-amber-300 dark:border-amber-800',
       dotClass: 'bg-amber-500',
     },
     IN_REVIEW: {
@@ -86,7 +102,8 @@ function KYCStatusBadge({ status }: { status: KYCStatus }) {
     },
     APPROVED: {
       label: 'Approuvé',
-      className: 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800',
+      className:
+        'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800',
       dotClass: 'bg-emerald-500',
     },
     REJECTED: {
@@ -97,23 +114,8 @@ function KYCStatusBadge({ status }: { status: KYCStatus }) {
   }
   const { label, className, dotClass } = config[status]
   return (
-    <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold ${className}`}>
-      <span className={`size-1.5 rounded-full ${dotClass}`} />
-      {label}
-    </span>
-  )
-}
-
-function DocStatusBadge({ status }: { status: KYCDocumentStatus }) {
-  const config: Record<KYCDocumentStatus, { label: string; className: string; icon: React.ElementType }> = {
-    VERIFIED: { label: 'Vérifié', className: 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800', icon: CheckCircle2 },
-    PENDING: { label: 'En attente', className: 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950 dark:text-amber-300 dark:border-amber-800', icon: Clock },
-    REJECTED: { label: 'Rejeté', className: 'bg-red-50 text-red-700 border-red-200 dark:bg-red-950 dark:text-red-300 dark:border-red-800', icon: XCircle },
-  }
-  const { label, className, icon: Icon } = config[status]
-  return (
-    <span className={`inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-xs font-medium ${className}`}>
-      <Icon className="size-3" />
+    <span className={cn('inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-semibold', className)}>
+      <span className={cn('size-1.5 rounded-full', dotClass)} />
       {label}
     </span>
   )
@@ -122,61 +124,111 @@ function DocStatusBadge({ status }: { status: KYCDocumentStatus }) {
 function RiskScoreBadge({ score }: { score: number }) {
   let label: string
   let className: string
-  let progressColor: string
+  let barClass: string
 
   if (score < 30) {
     label = 'Faible'
-    className = 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800'
-    progressColor = '[&>div]:bg-emerald-500'
+    className =
+      'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
+    barClass = 'bg-emerald-500'
   } else if (score <= 60) {
     label = 'Moyen'
-    className = 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950 dark:text-amber-300 dark:border-amber-800'
-    progressColor = '[&>div]:bg-amber-500'
+    className =
+      'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-300'
+    barClass = 'bg-amber-500'
   } else {
     label = 'Élevé'
-    className = 'bg-red-50 text-red-700 border-red-200 dark:bg-red-950 dark:text-red-300 dark:border-red-800'
-    progressColor = '[&>div]:bg-red-500'
+    className = 'border-red-200 bg-red-50 text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300'
+    barClass = 'bg-red-500'
   }
 
   return (
     <div className="flex items-center gap-2">
-      <div className="w-16 h-1.5 rounded-full bg-muted overflow-hidden">
-        <div className={`h-full rounded-full ${progressColor.replace('[&>div]:', '')} transition-all`} style={{ width: `${score}%` }} />
+      <div className="h-1.5 w-16 overflow-hidden rounded-full bg-muted">
+        <div className={cn('h-full rounded-full transition-all', barClass)} style={{ width: `${Math.min(score, 100)}%` }} />
       </div>
-      <Badge variant="outline" className={`text-[10px] font-medium ${className}`}>
+      <Badge variant="outline" className={cn('text-[10px] font-semibold tabular-nums', className)}>
         {score} — {label}
       </Badge>
     </div>
   )
 }
 
-// ─── Stats Card ───────────────────────────────────────────────────────────────
+// ─── Pipeline (répartition — même ton que les cartes récap Transactions) ───────
 
-function KycStatCard({
-  icon: Icon,
-  label,
+function CompliancePipelineBar({
+  pending,
+  review,
+  approved,
+  rejected,
+  total,
+}: {
+  pending: number
+  review: number
+  approved: number
+  rejected: number
+  total: number
+}) {
+  if (total === 0) return null
+  const pct = (n: number) => `${(n / total) * 100}%`
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center justify-between text-xs">
+        <span className="font-medium text-muted-foreground">Répartition par statut</span>
+        <span className="tabular-nums text-muted-foreground">{total} dossiers</span>
+      </div>
+      <div className="flex h-2 w-full overflow-hidden rounded-full bg-muted">
+        {pending > 0 && <div className="bg-amber-500 dark:bg-amber-500/90" style={{ width: pct(pending) }} />}
+        {review > 0 && <div className="bg-sky-500 dark:bg-sky-500/90" style={{ width: pct(review) }} />}
+        {approved > 0 && <div className="bg-emerald-500 dark:bg-emerald-500/90" style={{ width: pct(approved) }} />}
+        {rejected > 0 && <div className="bg-red-500 dark:bg-red-500/90" style={{ width: pct(rejected) }} />}
+      </div>
+      <div className="flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-muted-foreground">
+        <span className="inline-flex items-center gap-1.5">
+          <span className="size-2 rounded-full bg-amber-500" /> Attente
+        </span>
+        <span className="inline-flex items-center gap-1.5">
+          <span className="size-2 rounded-full bg-sky-500" /> Revue
+        </span>
+        <span className="inline-flex items-center gap-1.5">
+          <span className="size-2 rounded-full bg-emerald-500" /> Approuvé
+        </span>
+        <span className="inline-flex items-center gap-1.5">
+          <span className="size-2 rounded-full bg-red-500" /> Rejeté
+        </span>
+      </div>
+    </div>
+  )
+}
+
+// ─── Stats — aligné Utilisateurs / Agents ─────────────────────────────────────
+
+function StatsCard({
+  title,
   value,
-  color,
+  icon: Icon,
   iconBg,
   iconColor,
+  trend,
 }: {
-  icon: React.ElementType
-  label: string
+  title: string
   value: number
-  color?: string
+  icon: React.ElementType
   iconBg: string
   iconColor: string
+  trend?: string
 }) {
   return (
     <Card className="relative overflow-hidden">
-      <CardContent className="p-5">
-        <div className="flex items-start justify-between">
-          <div className="space-y-1.5">
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{label}</p>
-            <p className="text-2xl font-bold tracking-tight">{value}</p>
+      <CardContent className="p-4 md:p-5">
+        <div className="flex items-center justify-between">
+          <div className="space-y-1">
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{title}</p>
+            <p className="text-2xl font-bold tracking-tight">{value.toLocaleString('fr-FR')}</p>
+            {trend ? <p className="text-xs text-muted-foreground">{trend}</p> : null}
           </div>
-          <div className={`size-10 rounded-xl ${iconBg} flex items-center justify-center shrink-0`}>
-            <Icon className={`size-5 ${iconColor}`} />
+          <div className={cn('flex size-11 shrink-0 items-center justify-center rounded-xl', iconBg)}>
+            <Icon className={cn('size-5', iconColor)} />
           </div>
         </div>
       </CardContent>
@@ -184,53 +236,55 @@ function KycStatCard({
   )
 }
 
-// ─── Tier Level Card ──────────────────────────────────────────────────────────
+// ─── Niveaux KYC — cartes proches du gabarit liste Agents ──────────────────────
 
-function TierCard({
-  tier,
-  index,
-}: {
-  tier: (typeof kycLevels)[0]
-  index: number
-}) {
-  const tierColors = [
-    { header: 'bg-gray-100 text-gray-700 dark:bg-gray-800/50 dark:text-gray-300', accent: 'bg-gray-500', icon: 'text-gray-500' },
-    { header: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400', accent: 'bg-amber-500', icon: 'text-amber-500' },
-    { header: 'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400', accent: 'bg-teal-500', icon: 'text-teal-500' },
-    { header: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400', accent: 'bg-emerald-500', icon: 'text-emerald-500' },
-  ]
+const tierAccent = [
+  'bg-gray-500',
+  'bg-amber-500',
+  'bg-teal-500',
+  'bg-emerald-500',
+]
 
-  const color = tierColors[index]
-
+function TierCard({ tier, index }: { tier: (typeof kycLevels)[0]; index: number }) {
+  const accent = tierAccent[index] ?? 'bg-gray-500'
   return (
     <Card className="relative overflow-hidden">
-      <div className={`h-2 ${color.accent}`} />
-      <CardHeader className="pb-3">
+      <div className={cn('h-1.5', accent)} />
+      <CardHeader className="pb-2">
         <div className="flex items-center gap-2">
-          <BadgeCheck className={`size-5 ${color.icon}`} />
+          <BadgeCheck className="size-5 text-muted-foreground" />
           <CardTitle className="text-base font-bold">{tier.level}</CardTitle>
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
         <div>
-          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">Documents requis</p>
-          <p className="text-sm">{tier.documents}</p>
+          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Documents requis</p>
+          <p className="mt-1 text-sm">{tier.documents}</p>
         </div>
         <Separator />
-        <div className="space-y-2.5">
-          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Plafonds</p>
-          <div className="space-y-2">
-            <div className="flex items-center gap-2.5">
-              <ArrowDownToLine className="size-3.5 text-muted-foreground shrink-0" />
-              <div className="min-w-0"><p className="text-[11px] text-muted-foreground">Dépôt</p><p className="text-sm font-medium">{tier.depotMax}</p></div>
+        <div className="space-y-2">
+          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Plafonds</p>
+          <div className="space-y-2 text-sm">
+            <div className="flex items-center gap-2">
+              <ArrowDownToLine className="size-3.5 shrink-0 text-muted-foreground" />
+              <div>
+                <p className="text-[11px] text-muted-foreground">Dépôt</p>
+                <p className="font-medium">{tier.depotMax}</p>
+              </div>
             </div>
-            <div className="flex items-center gap-2.5">
-              <ArrowUpFromLine className="size-3.5 text-muted-foreground shrink-0" />
-              <div className="min-w-0"><p className="text-[11px] text-muted-foreground">Retrait</p><p className="text-sm font-medium">{tier.retraitMax}</p></div>
+            <div className="flex items-center gap-2">
+              <ArrowUpFromLine className="size-3.5 shrink-0 text-muted-foreground" />
+              <div>
+                <p className="text-[11px] text-muted-foreground">Retrait</p>
+                <p className="font-medium">{tier.retraitMax}</p>
+              </div>
             </div>
-            <div className="flex items-center gap-2.5">
-              <ArrowUpDown className="size-3.5 text-muted-foreground shrink-0" />
-              <div className="min-w-0"><p className="text-[11px] text-muted-foreground">Transfert</p><p className="text-sm font-medium">{tier.transfertMax}</p></div>
+            <div className="flex items-center gap-2">
+              <ArrowUpDown className="size-3.5 shrink-0 text-muted-foreground" />
+              <div>
+                <p className="text-[11px] text-muted-foreground">Transfert</p>
+                <p className="font-medium">{tier.transfertMax}</p>
+              </div>
             </div>
           </div>
         </div>
@@ -238,18 +292,65 @@ function TierCard({
     </Card>
   )
 }
-// ─── Main Component ───────────────────────────────────────────────────────────
+
+// ─── Tri — même pattern que Transactions ──────────────────────────────────────
+
+type SortField = 'id' | 'userName' | 'status' | 'riskScore' | 'submittedAt'
+type SortDirection = 'asc' | 'desc'
+
+function SortableHeader({
+  label,
+  field,
+  sortField,
+  sortDirection,
+  onSort,
+  className,
+}: {
+  label: string
+  field: SortField
+  sortField: SortField
+  sortDirection: SortDirection
+  onSort: (field: SortField) => void
+  className?: string
+}) {
+  const isActive = sortField === field
+  return (
+    <Button variant="ghost" size="sm" className={cn('-ml-3 h-8 gap-1', className)} onClick={() => onSort(field)}>
+      {label}
+      {isActive ? (
+        sortDirection === 'asc' ? (
+          <ChevronUp className="size-3.5" />
+        ) : (
+          <ChevronDown className="size-3.5" />
+        )
+      ) : (
+        <ArrowUpDown className="size-3.5 opacity-40" />
+      )}
+    </Button>
+  )
+}
+
+// ─── Main ─────────────────────────────────────────────────────────────────────
 
 const ITEMS_PER_PAGE = 8
 
 export function KycPage() {
   const [searchQuery, setSearchQuery] = useState('')
-  const [statusFilter, setStatusFilter] = useState<string>('all')
+  const [statusFilter, setStatusFilter] = useState<StatusFilterValue>('all')
   const [currentPage, setCurrentPage] = useState(1)
   const [selectedRequestId, setSelectedRequestId] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState('requests')
+  const [sortField, setSortField] = useState<SortField>('submittedAt')
+  const [sortDirection, setSortDirection] = useState<SortDirection>('desc')
 
-  // Compute stats
+  const handleSort = useCallback(
+    (field: SortField) => {
+      setSortDirection((prev) => (sortField === field && prev === 'asc' ? 'desc' : 'asc'))
+      setSortField(field)
+    },
+    [sortField],
+  )
+
   const stats = useMemo(() => {
     const total = kycRequests.length
     const enAttente = kycRequests.filter((k) => k.status === 'PENDING').length
@@ -259,30 +360,61 @@ export function KycPage() {
     return { total, enAttente, enRevue, approuves, rejetes }
   }, [])
 
-  // Filter & search
+  const actionQueueCount = stats.enAttente + stats.enRevue
+
   const filteredRequests = useMemo(() => {
-    return kycRequests.filter((req) => {
+    const list = kycRequests.filter((req) => {
       const matchesSearch =
         searchQuery === '' ||
         req.userName.toLowerCase().includes(searchQuery.toLowerCase()) ||
         req.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
         req.userId.toLowerCase().includes(searchQuery.toLowerCase())
 
-      const matchesStatus = statusFilter === 'all' || req.status === statusFilter
+      const matchesStatus =
+        statusFilter === 'all'
+          ? true
+          : statusFilter === 'ACTION_QUEUE'
+            ? req.status === 'PENDING' || req.status === 'IN_REVIEW'
+            : req.status === statusFilter
 
       return matchesSearch && matchesStatus
     })
-  }, [searchQuery, statusFilter])
 
-  // Pagination
+    list.sort((a, b) => {
+      let cmp = 0
+      switch (sortField) {
+        case 'id':
+          cmp = a.id.localeCompare(b.id)
+          break
+        case 'userName':
+          cmp = a.userName.localeCompare(b.userName)
+          break
+        case 'status':
+          cmp = a.status.localeCompare(b.status)
+          break
+        case 'riskScore':
+          cmp = a.riskScore - b.riskScore
+          break
+        case 'submittedAt':
+          cmp = new Date(a.submittedAt).getTime() - new Date(b.submittedAt).getTime()
+          break
+      }
+      return sortDirection === 'asc' ? cmp : -cmp
+    })
+
+    return list
+  }, [searchQuery, statusFilter, sortField, sortDirection])
+
   const totalPages = Math.max(1, Math.ceil(filteredRequests.length / ITEMS_PER_PAGE))
+  const safeCurrentPage = Math.min(currentPage, totalPages)
+
   const paginatedRequests = useMemo(() => {
-    const start = (currentPage - 1) * ITEMS_PER_PAGE
+    const start = (safeCurrentPage - 1) * ITEMS_PER_PAGE
     return filteredRequests.slice(start, start + ITEMS_PER_PAGE)
-  }, [filteredRequests, currentPage])
+  }, [filteredRequests, safeCurrentPage])
 
   const handleStatusChange = (value: string) => {
-    setStatusFilter(value)
+    setStatusFilter(value as StatusFilterValue)
     setCurrentPage(1)
   }
 
@@ -291,128 +423,273 @@ export function KycPage() {
     setCurrentPage(1)
   }
 
-  // If a request is selected, show detail page
+  const hasActiveFilters = searchQuery !== '' || statusFilter !== 'all'
+
+  const getPageNumbers = (): (number | '...')[] => {
+    const pages: (number | '...')[] = []
+    if (totalPages <= 5) {
+      for (let i = 1; i <= totalPages; i++) pages.push(i)
+    } else {
+      pages.push(1)
+      if (safeCurrentPage > 3) pages.push('...')
+      const start = Math.max(2, safeCurrentPage - 1)
+      const end = Math.min(totalPages - 1, safeCurrentPage + 1)
+      for (let i = start; i <= end; i++) pages.push(i)
+      if (safeCurrentPage < totalPages - 2) pages.push('...')
+      pages.push(totalPages)
+    }
+    return pages
+  }
+
+  const startIndex = filteredRequests.length === 0 ? 0 : (safeCurrentPage - 1) * ITEMS_PER_PAGE + 1
+  const endIndex = Math.min(safeCurrentPage * ITEMS_PER_PAGE, filteredRequests.length)
+
   if (selectedRequestId) {
     return <KYCDetailPage requestId={selectedRequestId} onBack={() => setSelectedRequestId(null)} />
   }
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center gap-3.5">
-        <div className="size-12 rounded-xl bg-primary/10 flex items-center justify-center">
-          <ShieldCheck className="size-6 text-primary" />
+      {/* Header — même structure que Agents */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-3.5">
+          <div className="flex size-12 items-center justify-center rounded-xl bg-primary/10">
+            <ShieldCheck className="size-6 text-primary" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight md:text-3xl">KYC & Conformité</h1>
+            <p className="mt-1 text-sm text-muted-foreground md:text-base">
+              Vérifications d&apos;identité et niveaux de conformité — plateforme RICASH
+            </p>
+          </div>
         </div>
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">KYC & Conformité</h1>
-          <p className="text-sm text-muted-foreground">Gérez les vérifications d&apos;identité et les niveaux de conformité</p>
+        <div className="flex shrink-0 items-center gap-2 self-start sm:self-auto">
+          <Button variant="outline" size="sm" className="gap-2">
+            <Download className="size-4" />
+            Exporter
+          </Button>
         </div>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
-        <KycStatCard icon={FileText} label="Total Demandes" value={stats.total} iconBg="bg-primary/10" iconColor="text-primary" />
-        <KycStatCard icon={Clock} label="En Attente" value={stats.enAttente} iconBg="bg-amber-100 dark:bg-amber-900/30" iconColor="text-amber-600 dark:text-amber-400" />
-        <KycStatCard icon={Eye} label="En Revue" value={stats.enRevue} iconBg="bg-sky-100 dark:bg-sky-900/30" iconColor="text-sky-600 dark:text-sky-400" />
-        <KycStatCard icon={CheckCircle2} label="Approuvées" value={stats.approuves} iconBg="bg-emerald-100 dark:bg-emerald-900/30" iconColor="text-emerald-600 dark:text-emerald-400" />
-        <KycStatCard icon={XCircle} label="Rejetées" value={stats.rejetes} iconBg="bg-red-100 dark:bg-red-900/30" iconColor="text-red-600 dark:text-red-400" />
+      {/* Stats — grille comme Utilisateurs */}
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
+        <StatsCard
+          title="Total dossiers"
+          value={stats.total}
+          icon={FileText}
+          iconBg="bg-primary/10"
+          iconColor="text-primary"
+          trend="Toutes les demandes"
+        />
+        <StatsCard
+          title="En attente"
+          value={stats.enAttente}
+          icon={Clock}
+          iconBg="bg-amber-100 dark:bg-amber-950"
+          iconColor="text-amber-600 dark:text-amber-400"
+        />
+        <StatsCard
+          title="En revue"
+          value={stats.enRevue}
+          icon={Eye}
+          iconBg="bg-sky-100 dark:bg-sky-950"
+          iconColor="text-sky-600 dark:text-sky-400"
+        />
+        <StatsCard
+          title="Approuvés"
+          value={stats.approuves}
+          icon={CheckCircle2}
+          iconBg="bg-emerald-100 dark:bg-emerald-950"
+          iconColor="text-emerald-600 dark:text-emerald-400"
+        />
+        <StatsCard
+          title="Rejetés"
+          value={stats.rejetes}
+          icon={XCircle}
+          iconBg="bg-red-100 dark:bg-red-950"
+          iconColor="text-red-600 dark:text-red-400"
+        />
       </div>
 
-      {/* Tabs */}
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="bg-muted/50 p-1">
-          <TabsTrigger value="requests" className="gap-1.5 data-[state=active]:bg-background data-[state=active]:shadow-sm">
+      {/* Répartition — carte isolée comme les filtres / récaps ailleurs */}
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base">Vue d&apos;ensemble du pipeline</CardTitle>
+          <CardDescription>Répartition des dossiers par étape de traitement</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <CompliancePipelineBar
+            pending={stats.enAttente}
+            review={stats.enRevue}
+            approved={stats.approuves}
+            rejected={stats.rejetes}
+            total={stats.total}
+          />
+        </CardContent>
+      </Card>
+
+      {/* Onglets — style Agents */}
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+        <TabsList className="bg-muted/50">
+          <TabsTrigger value="requests" className="gap-1.5 data-[state=active]:bg-background">
             <FileText className="size-3.5" />
             Demandes KYC
           </TabsTrigger>
-          <TabsTrigger value="levels" className="gap-1.5 data-[state=active]:bg-background data-[state=active]:shadow-sm">
+          <TabsTrigger value="levels" className="gap-1.5 data-[state=active]:bg-background relative">
             <ShieldCheck className="size-3.5" />
-            Niveaux & Plafonds
+            Niveaux & plafonds
+          </TabsTrigger>
+          <TabsTrigger value="queue" className="gap-1.5 data-[state=active]:bg-background relative">
+            <Clock className="size-3.5" />
+            À traiter
+            {actionQueueCount > 0 ? (
+              <span className="ml-1 inline-flex size-5 items-center justify-center rounded-full bg-amber-500 text-[10px] font-bold text-white">
+                {actionQueueCount}
+              </span>
+            ) : null}
           </TabsTrigger>
         </TabsList>
 
-        {/* ─── Tab 1: KYC Requests ──────────────────────────────────────────── */}
         <TabsContent value="requests" className="space-y-4">
-          {/* Filter Bar */}
           <Card>
             <CardContent className="p-4">
-              <div className="flex flex-col sm:flex-row gap-3">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
                 <div className="relative flex-1">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+                  <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
                   <Input
                     placeholder="Rechercher par nom, ID demande ou ID utilisateur..."
                     value={searchQuery}
                     onChange={(e) => handleSearchChange(e.target.value)}
-                    className="pl-9 h-10"
+                    className="h-10 pl-9"
                   />
                 </div>
-                <Select value={statusFilter} onValueChange={handleStatusChange}>
-                  <SelectTrigger className="w-full sm:w-[200px] h-10">
-                    <Filter className="size-4 mr-2 text-muted-foreground" />
-                    <SelectValue placeholder="Statut" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Tous les statuts</SelectItem>
-                    <SelectItem value="PENDING">En attente</SelectItem>
-                    <SelectItem value="IN_REVIEW">En revue</SelectItem>
-                    <SelectItem value="APPROVED">Approuvé</SelectItem>
-                    <SelectItem value="REJECTED">Rejeté</SelectItem>
-                  </SelectContent>
-                </Select>
+                <div className="flex w-full gap-2 sm:w-auto">
+                  <Select value={statusFilter} onValueChange={handleStatusChange}>
+                    <SelectTrigger className="h-10 w-full sm:w-[220px]">
+                      <SelectValue placeholder="Statut" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Tous les statuts</SelectItem>
+                      <SelectItem value="ACTION_QUEUE">À traiter (attente + revue)</SelectItem>
+                      <SelectItem value="PENDING">En attente</SelectItem>
+                      <SelectItem value="IN_REVIEW">En revue</SelectItem>
+                      <SelectItem value="APPROVED">Approuvé</SelectItem>
+                      <SelectItem value="REJECTED">Rejeté</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {hasActiveFilters ? (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="shrink-0 text-muted-foreground hover:text-foreground"
+                          onClick={() => {
+                            handleSearchChange('')
+                            handleStatusChange('all')
+                          }}
+                        >
+                          <FilterX className="size-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>Réinitialiser les filtres</TooltipContent>
+                    </Tooltip>
+                  ) : null}
+                </div>
               </div>
             </CardContent>
           </Card>
 
-          {/* KYC Requests Table */}
-          <Card className="hidden lg:block">
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg">Liste des demandes KYC</CardTitle>
+              <CardDescription className="mt-1">
+                {filteredRequests.length} demande{filteredRequests.length !== 1 ? 's' : ''} trouvée
+                {filteredRequests.length !== 1 ? 's' : ''}
+              </CardDescription>
+            </CardHeader>
             <CardContent className="p-0">
-              <div className="overflow-x-auto">
+              <div className="hidden overflow-x-auto lg:block">
                 <Table>
                   <TableHeader>
-                    <TableRow className="bg-muted/30">
-                      <TableHead className="font-semibold">ID</TableHead>
-                      <TableHead className="font-semibold">Utilisateur</TableHead>
-                      <TableHead className="font-semibold">Niveau Actuel</TableHead>
-                      <TableHead className="font-semibold">Niveau Demandé</TableHead>
-                      <TableHead className="font-semibold">Statut</TableHead>
-                      <TableHead className="font-semibold">Score Risque</TableHead>
-                      <TableHead className="font-semibold">Date</TableHead>
-                      <TableHead className="font-semibold text-right">Actions</TableHead>
+                    <TableRow className="bg-muted/50 hover:bg-muted/50">
+                      <TableHead className="w-[100px]">
+                        <SortableHeader label="ID" field="id" sortField={sortField} sortDirection={sortDirection} onSort={handleSort} />
+                      </TableHead>
+                      <TableHead>
+                        <SortableHeader label="Utilisateur" field="userName" sortField={sortField} sortDirection={sortDirection} onSort={handleSort} />
+                      </TableHead>
+                      <TableHead>Niveau actuel</TableHead>
+                      <TableHead>Niveau demandé</TableHead>
+                      <TableHead>
+                        <SortableHeader label="Statut" field="status" sortField={sortField} sortDirection={sortDirection} onSort={handleSort} />
+                      </TableHead>
+                      <TableHead>
+                        <SortableHeader label="Risque" field="riskScore" sortField={sortField} sortDirection={sortDirection} onSort={handleSort} />
+                      </TableHead>
+                      <TableHead>
+                        <SortableHeader
+                          label="Soumis"
+                          field="submittedAt"
+                          sortField={sortField}
+                          sortDirection={sortDirection}
+                          onSort={handleSort}
+                        />
+                      </TableHead>
+                      <TableHead className="w-[72px] text-center">Détail</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {paginatedRequests.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={8} className="h-24 text-center text-muted-foreground">
-                          Aucune demande trouvée
+                        <TableCell colSpan={8} className="h-32 text-center">
+                          <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                            <FileText className="size-8 opacity-40" />
+                            <p className="text-sm">Aucune demande trouvée pour ces critères.</p>
+                            {hasActiveFilters ? (
+                              <Button
+                                variant="link"
+                                size="sm"
+                                onClick={() => {
+                                  handleSearchChange('')
+                                  handleStatusChange('all')
+                                }}
+                              >
+                                Réinitialiser les filtres
+                              </Button>
+                            ) : null}
+                          </div>
                         </TableCell>
                       </TableRow>
                     ) : (
                       paginatedRequests.map((req) => (
                         <TableRow
                           key={req.id}
-                          className="cursor-pointer hover:bg-muted/50 transition-colors group"
+                          className="group cursor-pointer hover:bg-muted/50"
                           onClick={() => setSelectedRequestId(req.id)}
                         >
                           <TableCell className="font-mono text-xs text-muted-foreground">{req.id}</TableCell>
                           <TableCell>
-                            <div className="flex items-center gap-2.5">
-                              <Avatar className="size-8 border shrink-0">
-                                <AvatarFallback className="bg-primary/10 text-primary text-[10px] font-semibold">
-                                  {req.userName.split(' ').map((n) => n[0]).join('')}
+                            <div className="flex items-center gap-3">
+                              <Avatar className="size-9 border">
+                                <AvatarFallback className="bg-primary/10 text-xs font-semibold text-primary">
+                                  {req.userName
+                                    .split(' ')
+                                    .map((n) => n[0])
+                                    .join('')}
                                 </AvatarFallback>
                               </Avatar>
                               <div className="min-w-0">
-                                <p className="text-sm font-medium truncate group-hover:text-primary transition-colors">{req.userName}</p>
-                                <p className="text-[11px] text-muted-foreground truncate">{req.userId}</p>
+                                <p className="truncate text-sm font-medium group-hover:text-primary">{req.userName}</p>
+                                <p className="truncate font-mono text-xs text-muted-foreground">{req.userId}</p>
                               </div>
                             </div>
                           </TableCell>
                           <TableCell>
-                            <Badge variant="outline" className="text-[11px]">{req.currentLevel}</Badge>
+                            <TierLevelBadge level={req.currentLevel} />
                           </TableCell>
                           <TableCell>
-                            <Badge variant="outline" className="text-[11px] font-semibold">{req.requestedLevel}</Badge>
+                            <TierLevelBadge level={req.requestedLevel} />
                           </TableCell>
                           <TableCell>
                             <KYCStatusBadge status={req.status} />
@@ -421,16 +698,23 @@ export function KycPage() {
                             <RiskScoreBadge score={req.riskScore} />
                           </TableCell>
                           <TableCell className="text-sm text-muted-foreground">{formatDate(req.submittedAt)}</TableCell>
-                          <TableCell className="text-right">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-8 text-xs gap-1"
-                              onClick={(e) => { e.stopPropagation(); setSelectedRequestId(req.id) }}
-                            >
-                              <Eye className="size-3.5" />
-                              Voir
-                            </Button>
+                          <TableCell className="text-center">
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="size-8 text-muted-foreground hover:text-foreground"
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    setSelectedRequestId(req.id)
+                                  }}
+                                >
+                                  <Eye className="size-4" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>Voir les détails</TooltipContent>
+                            </Tooltip>
                           </TableCell>
                         </TableRow>
                       ))
@@ -439,104 +723,174 @@ export function KycPage() {
                 </Table>
               </div>
 
-              {/* Pagination */}
-              {totalPages > 1 && (
-                <div className="flex items-center justify-between px-4 py-3 border-t">
+              {/* Mobile / tablette */}
+              <div className="grid grid-cols-1 gap-4 p-4 md:grid-cols-2 lg:hidden">
+                {paginatedRequests.length === 0 ? (
+                  <Card className="col-span-full border-dashed">
+                    <CardContent className="flex flex-col items-center gap-2 py-12 text-center text-muted-foreground">
+                      <FileText className="size-8 opacity-40" />
+                      <p className="text-sm">Aucune demande trouvée pour ces critères.</p>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  paginatedRequests.map((req) => (
+                    <Card
+                      key={req.id}
+                      className="cursor-pointer transition-shadow hover:shadow-md"
+                      onClick={() => setSelectedRequestId(req.id)}
+                    >
+                      <CardContent className="p-4">
+                        <div className="flex items-start gap-3">
+                          <Avatar className="size-10 border">
+                            <AvatarFallback className="bg-primary/10 text-xs font-bold text-primary">
+                              {req.userName
+                                .split(' ')
+                                .map((n) => n[0])
+                                .join('')}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="min-w-0 flex-1 space-y-2">
+                            <div className="flex flex-wrap items-start justify-between gap-2">
+                              <div>
+                                <p className="font-semibold text-sm">{req.userName}</p>
+                                <p className="font-mono text-[11px] text-muted-foreground">
+                                  {req.id} — {req.userId}
+                                </p>
+                              </div>
+                              <KYCStatusBadge status={req.status} />
+                            </div>
+                            <div className="flex flex-wrap items-center gap-2">
+                              <TierLevelBadge level={req.currentLevel} />
+                              <ChevronRight className="size-3.5 text-muted-foreground" />
+                              <TierLevelBadge level={req.requestedLevel} />
+                            </div>
+                            <div className="flex items-center justify-between gap-2">
+                              <RiskScoreBadge score={req.riskScore} />
+                              <span className="text-xs text-muted-foreground">{formatDate(req.submittedAt)}</span>
+                            </div>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))
+                )}
+              </div>
+
+              {filteredRequests.length > 0 ? (
+                <div className="flex flex-col items-center justify-between gap-4 border-t px-4 py-3 sm:flex-row">
                   <p className="text-sm text-muted-foreground">
-                    {filteredRequests.length} demande{filteredRequests.length !== 1 ? 's' : ''}
+                    {startIndex}–{endIndex} sur {filteredRequests.length} demande{filteredRequests.length !== 1 ? 's' : ''}
                   </p>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1">
                     <Button
                       variant="outline"
-                      size="sm"
-                      className="h-8 gap-1"
+                      size="icon"
+                      className="size-8"
+                      disabled={safeCurrentPage <= 1}
                       onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                      disabled={currentPage === 1}
                     >
                       <ChevronLeft className="size-4" />
+                      <span className="sr-only">Précédent</span>
                     </Button>
-                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                      <Button
-                        key={page}
-                        variant={currentPage === page ? 'default' : 'outline'}
-                        size="sm"
-                        className="size-8 p-0"
-                        onClick={() => setCurrentPage(page)}
-                      >
-                        {page}
-                      </Button>
-                    ))}
+                    {getPageNumbers().map((page, idx) =>
+                      page === '...' ? (
+                        <span key={`e-${idx}`} className="px-2 text-sm text-muted-foreground">
+                          ...
+                        </span>
+                      ) : (
+                        <Button
+                          key={page}
+                          variant={page === safeCurrentPage ? 'default' : 'outline'}
+                          size="icon"
+                          className={cn(
+                            'size-8',
+                            page === safeCurrentPage && 'bg-emerald-600 text-white hover:bg-emerald-700 hover:text-white',
+                          )}
+                          onClick={() => setCurrentPage(page)}
+                        >
+                          {page}
+                        </Button>
+                      ),
+                    )}
                     <Button
                       variant="outline"
-                      size="sm"
-                      className="h-8 gap-1"
+                      size="icon"
+                      className="size-8"
+                      disabled={safeCurrentPage >= totalPages}
                       onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                      disabled={currentPage === totalPages}
                     >
                       <ChevronRight className="size-4" />
+                      <span className="sr-only">Suivant</span>
                     </Button>
                   </div>
                 </div>
+              ) : null}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="levels" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Référence des niveaux KYC</CardTitle>
+              <CardDescription>Documents requis et plafonds par palier — alignés sur la fiche utilisateur</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+                {kycLevels.map((tier, index) => (
+                  <TierCard key={tier.level} tier={tier} index={index} />
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="queue" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">File prioritaire</CardTitle>
+              <CardDescription>Dossiers en attente ou en cours de revue — même données que le filtre « À traiter »</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {kycRequests.filter((r) => r.status === 'PENDING' || r.status === 'IN_REVIEW').length === 0 ? (
+                <p className="text-sm text-muted-foreground">Aucun dossier à traiter pour le moment.</p>
+              ) : (
+                <ul className="divide-y rounded-lg border">
+                  {kycRequests
+                    .filter((r) => r.status === 'PENDING' || r.status === 'IN_REVIEW')
+                    .map((req) => (
+                      <li key={req.id}>
+                        <button
+                          type="button"
+                          className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left transition-colors hover:bg-muted/50"
+                          onClick={() => setSelectedRequestId(req.id)}
+                        >
+                          <div className="flex min-w-0 items-center gap-3">
+                            <Avatar className="size-9 border">
+                              <AvatarFallback className="bg-primary/10 text-xs font-semibold text-primary">
+                                {req.userName
+                                  .split(' ')
+                                  .map((n) => n[0])
+                                  .join('')}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div className="min-w-0">
+                              <p className="truncate font-medium">{req.userName}</p>
+                              <p className="truncate font-mono text-xs text-muted-foreground">{req.id}</p>
+                            </div>
+                          </div>
+                          <div className="flex shrink-0 items-center gap-2">
+                            <TierLevelBadge level={req.requestedLevel} />
+                            <KYCStatusBadge status={req.status} />
+                            <ChevronRight className="size-4 text-muted-foreground" />
+                          </div>
+                        </button>
+                      </li>
+                    ))}
+                </ul>
               )}
             </CardContent>
           </Card>
-
-          {/* Mobile Card Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 lg:hidden">
-            {paginatedRequests.length === 0 ? (
-              <Card className="col-span-full">
-                <CardContent className="p-8 text-center text-muted-foreground">
-                  <FileText className="size-12 mx-auto mb-3 opacity-50" />
-                  Aucune demande trouvée
-                </CardContent>
-              </Card>
-            ) : (
-              paginatedRequests.map((req) => (
-                <Card
-                  key={req.id}
-                  className="cursor-pointer hover:shadow-md transition-shadow"
-                  onClick={() => setSelectedRequestId(req.id)}
-                >
-                  <CardContent className="p-4">
-                    <div className="flex items-start gap-3">
-                      <Avatar className="size-10 border shrink-0">
-                        <AvatarFallback className="bg-primary/10 text-primary text-xs font-bold">
-                          {req.userName.split(' ').map((n) => n[0]).join('')}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-start justify-between gap-2">
-                          <div className="min-w-0">
-                            <p className="font-semibold text-sm">{req.userName}</p>
-                            <p className="text-xs text-muted-foreground font-mono">{req.id} — {req.userId}</p>
-                          </div>
-                          <KYCStatusBadge status={req.status} />
-                        </div>
-                        <div className="mt-3 flex items-center gap-2 flex-wrap">
-                          <Badge variant="outline" className="text-[10px]">{req.currentLevel}</Badge>
-                          <span className="text-xs text-muted-foreground">→</span>
-                          <Badge variant="outline" className="text-[10px] font-semibold">{req.requestedLevel}</Badge>
-                        </div>
-                        <div className="mt-2 flex items-center justify-between">
-                          <RiskScoreBadge score={req.riskScore} />
-                          <span className="text-xs text-muted-foreground">{formatDate(req.submittedAt)}</span>
-                        </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))
-            )}
-          </div>
-        </TabsContent>
-
-        {/* ─── Tab 2: KYC Levels & Limits ───────────────────────────────────── */}
-        <TabsContent value="levels" className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {kycLevels.map((tier, index) => (
-              <TierCard key={index} tier={tier} index={index} />
-            ))}
-          </div>
         </TabsContent>
       </Tabs>
     </div>
